@@ -1,0 +1,10 @@
+# This file is in your ROOT connect-sphere/ folder
+
+# Ignore node_modules in any sub-directory
+**/node_modules
+
+# Ignore .env files in any sub-directory
+**/.env
+
+# Ignore client build output
+client/dist
