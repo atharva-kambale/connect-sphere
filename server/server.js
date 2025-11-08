@@ -4,16 +4,22 @@ const express = require('express');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db.js');
 const { errorHandler } = require('./middleware/errorMiddleware.js');
+const cors = require('cors'); // 1. --- IMPORT CORS (NEW) ---
 
 // --- Import Routes ---
 const userRoutes = require('./routes/userRoutes.js');
 const listingRoutes = require('./routes/listingRoutes.js');
-const uploadRoutes = require('./routes/uploadRoutes.js'); // 1. Import upload routes
+const uploadRoutes = require('./routes/uploadRoutes.js');
 
 dotenv.config();
 connectDB();
 
 const app = express();
+
+// --- 2. USE CORS (NEW) ---
+// This MUST be near the top, before your routes
+app.use(cors());
+// -------------------------
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -24,10 +30,10 @@ app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
-// --- 2. Use Routes ---
+// --- Use Routes ---
 app.use('/api/users', userRoutes);
 app.use('/api/listings', listingRoutes);
-app.use('/api/upload', uploadRoutes); // 2. Add the upload route
+app.use('/api/upload', uploadRoutes);
 
 // Use the error handler
 app.use(errorHandler);
