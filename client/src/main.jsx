@@ -13,49 +13,39 @@ import {
   RouterProvider,
 } from 'react-router-dom';
 
+// --- 1. Import axios ---
+import axios from 'axios';
+
 // Import Pages
 import HomePage from './pages/HomePage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
-import CreateListingPage from './pages/CreateListingPage.jsx'; // 1. Import the new page
+import CreateListingPage from './pages/CreateListingPage.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
 
-// Import Components
-import ProtectedRoute from './components/ProtectedRoute.jsx'; // 2. Import the bouncer
+// --- 2. THIS IS THE NEW CODE ---
+// This tells axios what our base URL is.
+// In production (on Vercel), it will use the VITE_API_URL we set.
+// In development (local), our vite.config.js proxy is still used.
+if (import.meta.env.PROD) {
+  axios.defaults.baseURL = import.meta.env.VITE_API_URL;
+}
+// --- End of New Code ---
 
-// 3. Define our routes
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <App />, // The main layout wraps all pages
+    element: <App />,
     children: [
-      // --- Public Routes ---
+      // Public
+      { path: '/', element: <HomePage /> },
+      { path: '/login', element: <LoginPage /> },
+      { path: '/register', element: <RegisterPage /> },
+      // Private (Protected)
       {
-        path: '/',
-        element: <HomePage />,
-      },
-      {
-        path: '/login',
-        element: <LoginPage />,
-      },
-      {
-        path: '/register',
-        element: <RegisterPage />,
-      },
-
-      // --- Private / Protected Routes ---
-      {
-        path: '', // This acts as a wrapper
-        element: <ProtectedRoute />, // The bouncer component
-        children: [
-          // All routes inside here are now protected
-          {
-            path: '/create-listing',
-            element: <CreateListingPage />,
-          },
-          // You could add more protected routes here, e.g.,
-          // { path: '/my-profile', element: <ProfilePage /> },
-          // { path: '/my-listings', element: <MyListingsPage /> },
-        ],
+        path: '',
+        element: <ProtectedRoute />,
+        children: [{ path: '/create-listing', element: <CreateListingPage /> }],
       },
     ],
   },
