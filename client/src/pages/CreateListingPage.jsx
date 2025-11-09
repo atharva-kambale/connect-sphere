@@ -7,66 +7,16 @@ import axios from 'axios';
 
 import FormContainer from '../components/FormContainer.jsx';
 
-// --- (Styles - Add new styles for image preview) ---
-const formStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '1rem',
-};
-const inputStyle = {
-  padding: '0.75rem',
-  fontSize: '1rem',
-  border: '1px solid #ccc',
-  borderRadius: '4px',
-};
-const textAreaStyle = {
-  ...inputStyle,
-  minHeight: '100px',
-  fontFamily: 'sans-serif',
-};
-const fileInputStyle = {
-  ...inputStyle,
-  padding: '0.6rem',
-};
-const buttonStyle = {
-  padding: '0.75rem',
-  fontSize: '1rem',
-  border: 'none',
-  borderRadius: '4px',
-  background: '#007bff',
-  color: 'white',
-  cursor: 'pointer',
-  opacity: 1,
-};
-// --- NEW PREVIEW STYLES ---
-const previewContainerStyle = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: '10px',
-  marginTop: '10px',
-  border: '1px solid #ccc',
-  borderRadius: '4px',
-  padding: '10px',
-};
-const previewImageStyle = {
-  width: '100px',
-  height: '100px',
-  objectFit: 'cover',
-  borderRadius: '4px',
-};
-// --- (End of Styles) ---
-
 const CreateListingPage = () => {
-  // 1. Form state
+  // Form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('');
   
-  // --- UPGRADE ---
+  // Image state
   const [images, setImages] = useState([]); // Will hold the File objects
   const [imagePreviews, setImagePreviews] = useState([]); // Will hold data URLs for preview
-  // --- END UPGRADE ---
   
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
@@ -74,9 +24,9 @@ const CreateListingPage = () => {
   const navigate = useNavigate();
   const { userInfo } = useSelector((state) => state.auth);
 
-  // --- 2. UPGRADED file handler ---
+  // File handler for multiple images
   const fileHandler = (e) => {
-    const files = Array.from(e.target.files); // Get all selected files as an array
+    const files = Array.from(e.target.files);
 
     if (files.length > 5) {
       setError('You can only upload a maximum of 5 images.');
@@ -84,16 +34,17 @@ const CreateListingPage = () => {
     }
     setError(null);
 
-    // Set the File objects for uploading
+    // Revoke old object URLs to prevent memory leaks
+    imagePreviews.forEach(url => URL.revokeObjectURL(url));
+    
     setImages(files);
-
-    // Create previews
+    
+    // Create new previews
     const previews = files.map(file => URL.createObjectURL(file));
     setImagePreviews(previews);
   };
-  // --- END UPGRADE ---
 
-  // --- 3. UPGRADED submit handler ---
+  // Handle form submission
   const submitHandler = async (e) => {
     e.preventDefault();
     setError(null);
@@ -107,7 +58,6 @@ const CreateListingPage = () => {
 
     // --- STEP 1: Upload all images ---
     const formData = new FormData();
-    // We must append each file with the *same* field name: 'images'
     images.forEach(image => {
       formData.append('images', image); 
     });
@@ -119,12 +69,11 @@ const CreateListingPage = () => {
       },
     };
 
-    let imageUrls = []; // This will hold the Cloudinary URLs
+    let imageUrls = [];
 
     try {
-      // Our backend route now returns an object { imageUrls: [...] }
       const { data } = await axios.post('/api/upload', formData, uploadConfig);
-      imageUrls = data.imageUrls; // Get the array of URLs
+      imageUrls = data.imageUrls;
     } catch (uploadError) {
       console.error('Image upload failed:', uploadError);
       setError('Image upload failed. Please try again.');
@@ -139,7 +88,7 @@ const CreateListingPage = () => {
         description,
         price: Number(price),
         category,
-        imageUrls, // Pass the array of URLs
+        imageUrls,
       };
       
       const listingConfig = {
@@ -152,72 +101,113 @@ const CreateListingPage = () => {
       await axios.post('/api/listings', listingData, listingConfig);
 
       setUploading(false);
-      // Revoke preview URLs to free up memory
+      // Clean up object URLs
       imagePreviews.forEach(url => URL.revokeObjectURL(url));
       navigate('/'); // Success!
     } catch (createError) {
-      console.error('Listing creation failed:', createError);
-      setError('Listing creation failed. Please try again.');
+      setError(createError.response?.data?.message || 'Listing creation failed');
       setUploading(false);
     }
   };
-  // --- END UPGRADE ---
 
   return (
     <FormContainer>
-      <h1>Create New Listing</h1>
-      <form onSubmit={submitHandler} style={formStyle}>
-        {/* Title, Description, Price, Category (same as before) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <label htmlFor="title">Title</label>
-          <input type="text" id="title" value={title} onChange={(e) => setTitle(e.target.value)} style={inputStyle} required />
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <label htmlFor="description">Description</label>
-          <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} style={textAreaStyle} required />
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <label htmlFor="price">Price ($)</label>
-          <input type="number" id="price" value={price} onChange={(e) => setPrice(e.target.value)} style={inputStyle} required />
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <label htmlFor="category">Category</label>
-          <input type="text" id="category" placeholder="e.g., Books, Furniture" value={category} onChange={(e) => setCategory(e.target.value)} style={inputStyle} required />
+      <h1 className="text-3xl font-extrabold text-gray-800 mb-6 text-center">Create New Listing</h1>
+      
+      <form onSubmit={submitHandler} className="flex flex-col space-y-4">
+        
+        {/* Title */}
+        <div className="flex flex-col space-y-1">
+          <label htmlFor="title" className="font-medium text-gray-700">Title</label>
+          <input
+            type="text"
+            id="title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="p-3 border border-gray-300 rounded-lg focus:ring-4 focus:ring-blue-200"
+            required
+          />
         </div>
 
-        {/* --- 4. UPGRADED Image Input --- */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <label htmlFor="images">Images (Max 5)</label>
+        {/* Description */}
+        <div className="flex flex-col space-y-1">
+          <label htmlFor="description" className="font-medium text-gray-700">Description</label>
+          <textarea
+            id="description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="p-3 border border-gray-300 rounded-lg min-h-[100px] focus:ring-4 focus:ring-blue-200"
+            required
+          />
+        </div>
+
+        {/* Price and Category (side-by-side using Tailwind flex) */}
+        <div className="flex space-x-4">
+          <div className="flex flex-col space-y-1 w-1/2">
+            <label htmlFor="price" className="font-medium text-gray-700">Price ($)</label>
+            <input
+              type="number"
+              id="price"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className="p-3 border border-gray-300 rounded-lg focus:ring-4 focus:ring-blue-200"
+              required
+            />
+          </div>
+          <div className="flex flex-col space-y-1 w-1/2">
+            <label htmlFor="category" className="font-medium text-gray-700">Category</label>
+            <input
+              type="text"
+              id="category"
+              placeholder="e.g., Books, Furniture"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="p-3 border border-gray-300 rounded-lg focus:ring-4 focus:ring-blue-200"
+              required
+            />
+          </div>
+        </div>
+
+        {/* Image Upload */}
+        <div className="flex flex-col space-y-1">
+          <label htmlFor="images" className="font-medium text-gray-700">Images (Max 5)</label>
+          <p className="text-xs text-gray-500">Note: Uploading new images will replace all old ones.</p>
           <input
             type="file"
             id="images"
             accept="image/png, image/jpeg, image/jpg"
-            multiple // <-- This is the important HTML attribute
+            multiple
             onChange={fileHandler}
-            style={fileInputStyle}
+            className="p-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
             required
           />
         </div>
         
-        {/* --- 5. NEW Image Preview --- */}
+        {/* Image Previews */}
         {imagePreviews.length > 0 && (
-          <div style={previewContainerStyle}>
+          <div className="flex flex-wrap gap-3 mt-3 p-3 border border-gray-200 rounded-lg">
             {imagePreviews.map((src, index) => (
-              <img key={index} src={src} alt={`Preview ${index + 1}`} style={previewImageStyle} />
+              <img 
+                key={index} 
+                src={src} 
+                alt={`Preview ${index + 1}`} 
+                className="w-20 h-20 object-cover rounded-md border border-gray-300" 
+              />
             ))}
           </div>
         )}
-        {/* --- END OF NEW --- */}
 
-        {uploading && <p>Uploading images... Please wait...</p>}
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        {/* Messages */}
+        {uploading && <p className="text-blue-600 font-semibold">Uploading and Submitting... Please wait...</p>}
+        {error && <p className="text-red-600 font-semibold">{error}</p>}
 
+        {/* Submit Button */}
         <button
           type="submit"
-          style={{ ...buttonStyle, opacity: uploading ? 0.5 : 1 }}
+          className={`p-3.5 rounded-lg text-lg font-semibold transition duration-150 shadow-md ${uploading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
           disabled={uploading}
         >
-          {uploading ? 'Submitting...' : 'Create Listing'}
+          {uploading ? 'Processing...' : 'Create Listing'}
         </button>
       </form>
     </FormContainer>

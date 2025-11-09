@@ -1,118 +1,88 @@
-// client/src/pages/LoginPage.jsx
+// client/pages/LoginPage.jsx
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
 
-import FormContainer from '../components/FormContainer.jsx'; // Our new component
-import { setCredentials } from '../store/slices/authSlice.js'; // Our Redux action
+import FormContainer from '../components/FormContainer.jsx';
+import { setCredentials } from '../store/slices/authSlice.js';
 
-// Basic inline styles for the form
-const formStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '1rem',
-};
-
-const inputStyle = {
-  padding: '0.75rem',
-  fontSize: '1rem',
-  border: '1px solid #ccc',
-  borderRadius: '4px',
-};
-
-const buttonStyle = {
-  padding: '0.75rem',
-  fontSize: '1rem',
-  border: 'none',
-  borderRadius: '4px',
-  background: '#007bff',
-  color: 'white',
-  cursor: 'pointer',
-};
-
-// --- The Main Component ---
 const LoginPage = () => {
-  // 1. Form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(null); // For login errors
+  const [error, setError] = useState(null);
 
-  // 2. Redux and Router hooks
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
-  // 3. Get user info from Redux state
   const { userInfo } = useSelector((state) => state.auth);
 
-  // 4. Redirect if already logged in
   useEffect(() => {
     if (userInfo) {
-      navigate('/'); // Redirect to homepage
+      navigate('/');
     }
   }, [navigate, userInfo]);
 
-  // 5. Handle form submission
   const submitHandler = async (e) => {
-    e.preventDefault(); // Stop the page from reloading
-    setError(null); // Clear previous errors
+    e.preventDefault();
+    setError(null);
 
     try {
-      // 6. Call our backend API
       const res = await axios.post('/api/users/login', { email, password });
-      
-      // 7. 'res.data' is the user object with the token
-      // We dispatch our 'setCredentials' action to update the global state
       dispatch(setCredentials(res.data));
-      
-      // 8. Redirect to the homepage
       navigate('/');
     } catch (err) {
-      // 'err.response.data.message' is the error from our backend
-      setError(err.response?.data?.message || 'Login Failed');
+      setError(err.response?.data?.message || 'Login Failed'); 
     }
   };
 
   return (
     <FormContainer>
-      <h1>Sign In</h1>
-      <form onSubmit={submitHandler} style={formStyle}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <label htmlFor="email">Email Address</label>
+      <h1 className="text-3xl font-extrabold text-gray-800 mb-6 text-center">Sign In</h1>
+      <form onSubmit={submitHandler} className="flex flex-col space-y-5">
+        
+        {/* Email Input */}
+        <div className="flex flex-col space-y-1">
+          <label htmlFor="email" className="font-medium text-gray-700">Email Address</label>
           <input
             type="email"
             id="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            style={inputStyle}
+            className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-200 transition duration-150"
             required
           />
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <label htmlFor="password">Password</label>
+        {/* Password Input */}
+        <div className="flex flex-col space-y-1">
+          <label htmlFor="password" className="font-medium text-gray-700">Password</label>
           <input
             type="password"
             id="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            style={inputStyle}
+            className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-200 transition duration-150"
             required
           />
         </div>
 
-        {/* Show error message if login fails */}
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        {/* Error Message */}
+        {error && <p className="text-red-600 text-sm font-semibold">{error}</p>}
 
-        <button type="submit" style={buttonStyle}>
+        {/* Submit Button */}
+        <button 
+          type="submit" 
+          className="bg-blue-600 text-white p-3.5 rounded-lg text-lg font-semibold hover:bg-blue-700 transition duration-150 shadow-md"
+        >
           Sign In
         </button>
       </form>
 
-      <div style={{ marginTop: '1rem' }}>
+      {/* Register Link */}
+      <div className="mt-6 text-center text-sm">
         New Customer?{' '}
-        <Link to="/register" style={{ color: '#007bff' }}>
+        <Link to="/register" className="text-blue-600 hover:text-blue-800 font-bold">
           Register
         </Link>
       </div>

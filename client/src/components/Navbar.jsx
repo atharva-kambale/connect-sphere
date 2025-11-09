@@ -6,41 +6,12 @@ import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../store/slices/authSlice.js';
 import socket from '../socket.js';
 
-// --- (Styles - createButtonStyle is removed) ---
-const navStyle = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: '1rem 2rem',
-  background: '#fff',
-  color: '#333',
-  borderBottom: '1px solid #ddd',
-  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-};
-const logoStyle = {
-  textDecoration: 'none',
-  color: '#333',
-  fontSize: '1.5rem',
-  fontWeight: 'bold',
-};
-const navLinksStyle = {
-  display: 'flex',
-  gap: '1.5rem',
-  alignItems: 'center',
-};
-const navLinkStyle = {
-  textDecoration: 'none',
-  color: '#555',
-  fontSize: '1rem',
-  cursor: 'pointer',
-};
-// --- (End of styles) ---
-
 const Navbar = () => {
   const { userInfo } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  // Socket logic remains the same
   useEffect(() => {
     if (userInfo) {
       socket.connect();
@@ -58,40 +29,60 @@ const Navbar = () => {
   };
 
   return (
-    <nav style={navStyle}>
-      <Link to="/" style={logoStyle}>
-        Connect Sphere
-      </Link>
+    <nav className="bg-white shadow-md border-b border-gray-200">
+      <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+        
+        {/* Logo */}
+        <Link to="/" className="text-2xl font-bold text-gray-800 hover:text-blue-600">
+          Connect Sphere
+        </Link>
 
-      <div style={navLinksStyle}>
-        {userInfo ? (
-          // --- If user is logged IN ---
-          <>
-            <Link to="/inbox" style={navLinkStyle}>
-              Inbox
-            </Link>
-            <Link to="/profile" style={navLinkStyle}>
-              Profile
-            </Link>
-            {/* 1. --- "CREATE LISTING" BUTTON IS REMOVED --- */}
-            <span style={{ ...navLinkStyle, color: '#000', cursor: 'default' }}>
-              Welcome, {userInfo.name.split(' ')[0]}!
-            </span>
-            <a onClick={logoutHandler} style={navLinkStyle}>
-              Logout
-            </a>
-          </>
-        ) : (
-          // --- If user is logged OUT ---
-          <>
-            <Link to="/login" style={navLinkStyle}>
-              Login
-            </Link>
-            <Link to="/register" style={navLinkStyle}>
-              Sign Up
-            </Link>
-          </>
-        )}
+        {/* Navigation Links */}
+        <div className="flex items-center space-x-6">
+          {/* Public Links: Always visible */}
+          <Link to="/about" className="text-gray-600 hover:text-blue-600 transition-colors">
+            About
+          </Link>
+          <Link to="/contact" className="text-gray-600 hover:text-blue-600 transition-colors">
+            Contact
+          </Link>
+          
+          {userInfo ? (
+            // --- If user is logged IN (Private Links) ---
+            <>
+              <Link to="/inbox" className="text-gray-600 hover:text-blue-600 transition-colors">
+                Inbox
+              </Link>
+              <Link to="/profile" className="text-gray-600 hover:text-blue-600 transition-colors">
+                Profile
+              </Link>
+              
+              <span className="text-gray-800">
+                Welcome, {userInfo.name.split(' ')[0]}!
+              </span>
+              
+              <button
+                onClick={logoutHandler}
+                className="bg-red-500 text-white px-3 py-1 rounded-md text-sm font-medium hover:bg-red-600 transition-colors"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            // --- If user is logged OUT (Auth Links) ---
+            <>
+              <Link to="/login" className="text-gray-600 hover:text-blue-600 transition-colors">
+                Login
+              </Link>
+              <Link
+                to="/register"
+                className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+              >
+                Sign Up
+              </Link>
+            </>
+          )}
+        </div>
       </div>
     </nav>
   );

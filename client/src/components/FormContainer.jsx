@@ -1,28 +1,15 @@
-// client/src/components/FormContainer.jsx
+// client/components/FormContainer.jsx
 
 import React from 'react';
 
-// Basic inline styles for our container
-const containerStyle = {
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  padding: '2rem',
-};
-
-const formBoxStyle = {
-  width: '100%',
-  maxWidth: '500px',
-  padding: '2rem',
-  background: '#ffffff',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-  borderRadius: '8px',
-};
-
 const FormContainer = ({ children }) => {
   return (
-    <div style={containerStyle}>
-      <div style={formBoxStyle}>{children}</div>
+    // Tailwind classes: Flex, center content, margin-top (mt-8), shadow-xl
+    <div className="flex justify-center items-start pt-8 min-h-screen">
+      {/* Tailwind classes: Max width (max-w-xl), padding, background, rounded, shadow */}
+      <div className="w-full max-w-xl p-6 bg-white rounded-xl shadow-2xl">
+        {children}
+      </div>
     </div>
   );
 };

@@ -20,10 +20,12 @@ import LoginPage from './pages/LoginPage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
 import ListingDetailPage from './pages/ListingDetailPage.jsx';
 import CreateListingPage from './pages/CreateListingPage.jsx';
-import EditListingPage from './pages/EditListingPage.jsx'; // 1. Import new page
+import EditListingPage from './pages/EditListingPage.jsx';
 import ChatPage from './pages/ChatPage.jsx';
 import InboxPage from './pages/InboxPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
+import AboutPage from './pages/AboutPage.jsx'; // NEW
+import ContactPage from './pages/ContactPage.jsx'; // NEW
 
 // Import Components
 import ProtectedRoute from './components/ProtectedRoute.jsx';
@@ -42,6 +44,8 @@ const router = createBrowserRouter([
       { path: '/login', element: <LoginPage /> },
       { path: '/register', element: <RegisterPage /> },
       { path: '/listing/:id', element: <ListingDetailPage /> },
+      { path: '/about', element: <AboutPage /> }, // NEW PUBLIC ROUTE
+      { path: '/contact', element: <ContactPage /> }, // NEW PUBLIC ROUTE
 
       // --- Private / Protected Routes ---
       {
@@ -49,7 +53,7 @@ const router = createBrowserRouter([
         element: <ProtectedRoute />,
         children: [
           { path: '/create-listing', element: <CreateListingPage /> },
-          { path: '/edit-listing/:id', element: <EditListingPage /> }, // 2. Add route
+          { path: '/edit-listing/:id', element: <EditListingPage /> },
           { path: '/chat/:listingId/:buyerId/:sellerId', element: <ChatPage /> },
           { path: '/inbox', element: <InboxPage /> },
           { path: '/profile', element: <ProfilePage /> },

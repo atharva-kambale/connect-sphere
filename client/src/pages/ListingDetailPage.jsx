@@ -4,188 +4,138 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
-
-// --- (Styles - Updated) ---
-const pageStyle = {
-  maxWidth: '1000px', // A bit wider for the gallery
-  margin: '2rem auto',
-  padding: '2rem',
-  background: '#fff',
-  borderRadius: '8px',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-  display: 'grid',
-  gridTemplateColumns: '1.2fr 1fr', // Give image column a bit more space
-  gap: '2.5rem',
-};
-
-// -- NEW IMAGE GALLERY STYLES --
-const galleryStyle = {
-  display: 'flex',
-  flexDirection: 'column', // Main image on top, thumbnails below
-};
-const mainImageStyle = {
-  width: '100%',
-  height: '450px',
-  objectFit: 'cover',
-  borderRadius: '8px',
-  border: '1px solid #eee',
-};
-const thumbnailContainerStyle = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: '10px',
-  marginTop: '1rem',
-};
-const thumbnailStyle = {
-  width: '80px',
-  height: '80px',
-  objectFit: 'cover',
-  borderRadius: '4px',
-  border: '2px solid transparent', // Default border
-  cursor: 'pointer',
-};
-const activeThumbnailStyle = {
-  ...thumbnailStyle,
-  border: '2px solid #007bff', // Active border
-  boxShadow: '0 0 5px rgba(0,123,255,0.5)',
-};
-// -- END GALLERY STYLES --
-
-const infoStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-};
-const titleStyle = {
-  fontSize: '2rem',
-  fontWeight: 'bold',
-  marginBottom: '1rem',
-};
-const priceStyle = {
-  fontSize: '1.75rem',
-  fontWeight: 'bold',
-  color: '#007bff',
-  marginBottom: '1rem',
-};
-const descStyle = {
-  fontSize: '1rem',
-  color: '#555',
-  lineHeight: '1.6',
-  marginBottom: '1.5rem',
-};
-const detailStyle = {
-  fontSize: '0.9rem',
-  color: '#777',
-  marginBottom: '0.5rem',
-};
-const buttonStyle = {
-  display: 'inline-block',
-  width: '100%',
-  padding: '1rem',
-  marginTop: '1rem',
-  background: '#28a745',
-  color: 'white',
-  textDecoration: 'none',
-  textAlign: 'center',
-  border: 'none',
-  borderRadius: '5px',
-  cursor: 'pointer',
-  fontSize: '1.1rem',
-  fontWeight: 'bold',
-};
-// --- (End of Styles) ---
+import Rating from '../components/Rating.jsx';
 
 const ListingDetailPage = () => {
   const { id: listingId } = useParams();
   const [listing, setListing] = useState(null);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
-  // --- 1. NEW STATE FOR GALLERY ---
   const [mainImage, setMainImage] = useState('');
-  // --- END NEW STATE ---
 
   const { userInfo } = useSelector((state) => state.auth);
 
   useEffect(() => {
-    const fetchListing = async () => {
+    const fetchListingAndReviews = async () => {
       try {
         setLoading(true);
-        const { data } = await axios.get(`/api/listings/${listingId}`);
-        setListing(data);
-        
-        // --- 2. SET THE DEFAULT MAIN IMAGE ---
-        if (data.imageUrls && data.imageUrls.length > 0) {
-          setMainImage(data.imageUrls[0]);
+        // FETCH LISTING (API Call 1)
+        const { data: listingData } = await axios.get(`/api/listings/${listingId}`);
+        setListing(listingData);
+
+        if (listingData.imageUrls && listingData.imageUrls.length > 0) {
+          setMainImage(listingData.imageUrls[0]);
         }
-        // --- END ---
+
+        // FETCH REVIEWS (API Call 2)
+        const sellerId = listingData.user._id;
+        const { data: reviewsData } = await axios.get(`/api/reviews/${sellerId}`);
+        setReviews(reviewsData);
 
       } catch (err) {
-        setError('Failed to load listing.');
-        console.error(err);
+        setError('Failed to load listing or reviews.');
       } finally {
         setLoading(false);
       }
     };
-    fetchListing();
+    fetchListingAndReviews();
   }, [listingId]);
 
-  if (loading) return <h2>Loading...</h2>;
-  if (error) return <h2 style={{ color: 'red' }}>{error}</h2>;
-  if (!listing) return <h2>Listing not found.</h2>;
+  if (loading) return <div className="text-center mt-10 text-xl font-semibold">Loading...</div>;
+  if (error) return <div className="text-center mt-10 text-xl font-semibold text-red-600">{error}</div>;
+  if (!listing) return <div className="text-center mt-10 text-xl font-semibold">Listing not found.</div>;
 
-  const isOwner = userInfo?._id === listing.user._id; // We populated 'user'
+  const isOwner = userInfo?._id === listing.user._id;
   const chatUrl = `/chat/${listing._id}/${userInfo?._id}/${listing.user._id}`;
 
   return (
-    <div style={pageStyle}>
-      {/* Column 1: Image Gallery */}
-      <div style={galleryStyle}>
-        {/* Main Image */}
-        <img 
-          src={mainImage} 
-          alt={listing.title} 
-          style={mainImageStyle} 
-        />
+    <div className="max-w-6xl mx-auto p-4">
+      
+      {/* Top Container for Listing Details */}
+      <div className="bg-white rounded-xl shadow-xl p-8 grid md:grid-cols-2 gap-10">
         
-        {/* Thumbnail Gallery */}
-        <div style={thumbnailContainerStyle}>
-          {listing.imageUrls.map((url, index) => (
-            <img
-              key={index}
-              src={url}
-              alt={`Thumbnail ${index + 1}`}
-              // 3. SET ACTIVE STYLE AND CLICK HANDLER
-              style={url === mainImage ? activeThumbnailStyle : thumbnailStyle}
-              onClick={() => setMainImage(url)}
+        {/* Column 1: Image Gallery */}
+        <div className="flex flex-col">
+          {/* Main Image */}
+          <img 
+            src={mainImage} 
+            alt={listing.title} 
+            className="w-full h-[450px] object-cover rounded-lg border border-gray-200 shadow-md" 
+          />
+          
+          {/* Thumbnail Gallery */}
+          <div className="flex flex-wrap gap-3 mt-4">
+            {listing.imageUrls.map((url, index) => (
+              <img
+                key={index}
+                src={url}
+                alt={`Thumbnail ${index + 1}`}
+                className={`w-20 h-20 object-cover rounded-md cursor-pointer transition-all duration-150 ${url === mainImage ? 'border-4 border-blue-500 shadow-lg' : 'border border-gray-300 hover:border-blue-300'}`}
+                onClick={() => setMainImage(url)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Column 2: Info */}
+        <div className="flex flex-col">
+          <h1 className="text-4xl font-extrabold text-gray-900 mb-2">{listing.title}</h1>
+          <p className="text-3xl font-bold text-blue-600 mb-4">${listing.price}</p>
+          
+          {/* Seller and Rating */}
+          <div className="mb-4 pb-4 border-b border-gray-200">
+            <p className="text-lg text-gray-700">
+              <strong>Sold by:</strong> {listing.user.name}
+            </p>
+            <Rating 
+              value={listing.user.rating} 
+              text={` (${listing.user.numReviews} reviews)`} 
             />
-          ))}
+          </div>
+
+          {/* Details */}
+          <p className="text-md text-gray-600 mb-1">
+            <strong>University:</strong> {listing.university}
+          </p>
+          <p className="text-md text-gray-600 mb-1"><strong>Category:</strong> {listing.category}</p>
+          <p className="text-md text-gray-600 mb-4">
+            <strong>Posted:</strong> {new Date(listing.createdAt).toLocaleDateString()}
+          </p>
+          
+          <h3 className="text-xl font-semibold mt-2 mb-2 text-gray-800">Description</h3>
+          <p className="text-gray-700 leading-relaxed mb-6 flex-grow">{listing.description}</p>
+          
+          {/* Message Button */}
+          {userInfo && !isOwner && (
+            <Link 
+              to={chatUrl} 
+              className="bg-green-500 text-white p-3.5 rounded-lg text-lg font-semibold hover:bg-green-600 transition duration-150 text-center shadow-lg"
+            >
+              Message Seller
+            </Link>
+          )}
         </div>
       </div>
-
-      {/* Column 2: Info */}
-      <div style={infoStyle}>
-        <h1 style={titleStyle}>{listing.title}</h1>
-        <p style={priceStyle}>${listing.price}</p>
-        <p style={detailStyle}>
-          <strong>Sold by:</strong> {listing.user.name}
-        </p>
-        <p style={detailStyle}>
-          <strong>University:</strong> {listing.university}
-        </p>
-        <p style={detailStyle}><strong>Category:</strong> {listing.category}</p>
-        
-        <h3 style={{ marginTop: '1rem' }}>Description:</h3>
-        <p style={descStyle}>{listing.description}</p>
-        
-        <p style={detailStyle}>
-          <strong>Posted:</strong> {new Date(listing.createdAt).toLocaleDateString()}
-        </p>
-
-        {/* 4. "Message Seller" button (no change) */}
-        {userInfo && !isOwner && (
-          <Link to={chatUrl} style={buttonStyle}>
-            Message Seller
-          </Link>
+      
+      {/* Reviews Section */}
+      <div className="mt-8 bg-white rounded-xl shadow-xl p-8">
+        <h2 className="text-2xl font-bold mb-4 border-b pb-2 text-gray-800">Reviews for {listing.user.name}</h2>
+        {reviews.length === 0 ? (
+          <p className="text-gray-500">No reviews yet. Be the first to leave one!</p>
+        ) : (
+          <div className="space-y-6">
+            {reviews.map((review) => (
+              <div key={review._id} className="border-b pb-4 last:border-b-0">
+                <div className="flex justify-between items-start">
+                  <strong className="text-lg text-gray-700">{review.author.name}</strong>
+                  <p className="text-xs text-gray-400">{new Date(review.createdAt).toLocaleDateString()}</p>
+                </div>
+                <Rating value={review.rating} />
+                <p className="text-gray-600 mt-1">{review.comment}</p>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
