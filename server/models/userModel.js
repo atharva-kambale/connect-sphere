@@ -22,6 +22,19 @@ const userSchema = mongoose.Schema(
       type: String,
       required: [true, 'Please add your university'],
     },
+
+    // --- THIS IS THE NEW CODE ---
+    rating: {
+      type: Number,
+      required: true,
+      default: 0, // Default to 0 stars
+    },
+    numReviews: {
+      type: Number,
+      required: true,
+      default: 0, // Default to 0 reviews
+    },
+    // --- END OF NEW CODE ---
   },
   {
     // 2. Add timestamps
@@ -30,6 +43,4 @@ const userSchema = mongoose.Schema(
 );
 
 // 3. Create the Model and Export it
-// We name our model 'User'
-// Mongoose will automatically create a collection in MongoDB called 'users' (lowercase, plural)
 module.exports = mongoose.model('User', userSchema);

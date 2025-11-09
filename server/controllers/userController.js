@@ -5,10 +5,20 @@ const bcrypt = require('bcryptjs');
 const asyncHandler = require('express-async-handler');
 const generateToken = require('../utils/generateToken.js');
 
+// Helper function to filter unwanted fields
+const filterObj = (obj, ...allowedFields) => {
+  const newObj = {};
+  Object.keys(obj).forEach(el => {
+    if (allowedFields.includes(el)) newObj[el] = obj[el];
+  });
+  return newObj;
+};
+
 // @desc    Register a new user
 // @route   POST /api/users
 // @access  Public
 const registerUser = asyncHandler(async (req, res) => {
+  // We sanitize the input here too
   const { name, email, password, university } = req.body;
 
   if (!name || !email || !password || !university) {
@@ -72,13 +82,14 @@ const loginUser = asyncHandler(async (req, res) => {
 // @route   GET /api/users/me
 // @access  Private
 const getUserProfile = asyncHandler(async (req, res) => {
-  // req.user is populated by our 'protect' middleware
   if (req.user) {
     res.json({
       _id: req.user.id,
       name: req.user.name,
       email: req.user.email,
       university: req.user.university,
+      rating: req.user.rating, // Ensure these are included
+      numReviews: req.user.numReviews,
     });
   } else {
     res.status(404);
@@ -86,24 +97,28 @@ const getUserProfile = asyncHandler(async (req, res) => {
   }
 });
 
-// --- THIS IS THE NEW FUNCTION ---
 // @desc    Update user profile
 // @route   PUT /api/users/me
 // @access  Private
 const updateUserProfile = asyncHandler(async (req, res) => {
-  // 1. Get the user from the 'protect' middleware
+  // 1. --- CRITICAL SECURITY FIX ---
+  // We use the filterObj helper to ensure a user can ONLY update these fields.
+  // This prevents malicious users from updating sensitive fields like 'isAdmin' or 'role'.
+  const filteredBody = filterObj(req.body, 'name', 'email', 'university', 'password');
+  // --- END FIX ---
+  
   const user = await User.findById(req.user._id);
 
   if (user) {
-    // 2. Update the fields
-    user.name = req.body.name || user.name;
-    user.email = req.body.email || user.email;
-    user.university = req.body.university || user.university;
+    // 2. Update the fields using the sanitized data
+    user.name = filteredBody.name || user.name;
+    user.email = filteredBody.email || user.email;
+    user.university = filteredBody.university || user.university;
 
     // 3. (Optional) Update password if it was sent
-    if (req.body.password) {
+    if (filteredBody.password) {
       const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(req.body.password, salt);
+      user.password = await bcrypt.hash(filteredBody.password, salt);
     }
 
     // 4. Save the updated user
@@ -115,6 +130,8 @@ const updateUserProfile = asyncHandler(async (req, res) => {
       name: updatedUser.name,
       email: updatedUser.email,
       university: updatedUser.university,
+      rating: updatedUser.rating,
+      numReviews: updatedUser.numReviews,
       token: generateToken(updatedUser._id),
     });
   } else {
@@ -122,12 +139,11 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     throw new Error('User not found');
   }
 });
-// --- END OF NEW FUNCTION ---
 
 // --- UPDATE THE EXPORTS ---
 module.exports = {
   registerUser,
   loginUser,
   getUserProfile,
-  updateUserProfile, // Add the new function
+  updateUserProfile,
 };

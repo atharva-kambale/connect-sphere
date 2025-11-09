@@ -3,6 +3,15 @@
 const asyncHandler = require('express-async-handler');
 const Listing = require('../models/listingModel.js');
 
+// Helper function to filter unwanted fields (copied from userController)
+const filterObj = (obj, ...allowedFields) => {
+  const newObj = {};
+  Object.keys(obj).forEach(el => {
+    if (allowedFields.includes(el)) newObj[el] = obj[el];
+  });
+  return newObj;
+};
+
 // @desc    Create a new listing
 // @route   POST /api/listings
 // @access  Private
@@ -35,30 +44,14 @@ const createListing = asyncHandler(async (req, res) => {
 // @route   GET /api/listings
 // @access  Public
 const getListings = asyncHandler(async (req, res) => {
-  // --- THIS IS THE UPGRADE ---
-  
-  // 1. Build the keyword filter
   const keyword = req.query.keyword
-    ? {
-        title: {
-          $regex: req.query.keyword,
-          $options: 'i',
-        },
-      }
+    ? { title: { $regex: req.query.keyword, $options: 'i', }, }
     : {};
-    
-  // 2. Build the category filter
   const category = req.query.category
-    ? {
-        category: req.query.category, // Exact match on category
-      }
+    ? { category: req.query.category, }
     : {};
   
-  // 3. Combine all filters
-  // This finds listings that match BOTH the keyword AND the category
   const listings = await Listing.find({ ...keyword, ...category }).sort({ createdAt: -1 });
-  // --- END OF UPGRADE ---
-  
   res.json(listings);
 });
 
@@ -68,7 +61,7 @@ const getListings = asyncHandler(async (req, res) => {
 const getListingById = asyncHandler(async (req, res) => {
   const listing = await Listing.findById(req.params.id).populate(
     'user',
-    'name email'
+    'name email rating numReviews'
   );
 
   if (listing) {
@@ -86,7 +79,6 @@ const getMyListings = asyncHandler(async (req, res) => {
   const listings = await Listing.find({ user: req.user.id }).sort({
     createdAt: -1,
   });
-  
   res.json(listings);
 });
 
@@ -106,11 +98,24 @@ const updateListing = asyncHandler(async (req, res) => {
     throw new Error('User not authorized to update this listing');
   }
 
+  // --- CRITICAL SECURITY FIX ---
+  // Only allow updating these fields!
+  const filteredBody = filterObj(req.body, 
+    'title', 
+    'description', 
+    'price', 
+    'category', 
+    'imageUrls', 
+    'isSold' // Allow status change if user is marking it sold
+  );
+  // --- END FIX ---
+
   const updatedListing = await Listing.findByIdAndUpdate(
     req.params.id,
-    req.body,
+    filteredBody, // Use the sanitized body
     {
       new: true,
+      runValidators: true, // Re-run schema validators on update
     }
   );
 
