@@ -1,4 +1,4 @@
-// client/src/main.jsx
+// client/main.jsx
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -12,40 +12,48 @@ import {
   createBrowserRouter,
   RouterProvider,
 } from 'react-router-dom';
-
-// --- 1. Import axios ---
 import axios from 'axios';
 
 // Import Pages
 import HomePage from './pages/HomePage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
+import ListingDetailPage from './pages/ListingDetailPage.jsx';
 import CreateListingPage from './pages/CreateListingPage.jsx';
+import EditListingPage from './pages/EditListingPage.jsx'; // 1. Import new page
+import ChatPage from './pages/ChatPage.jsx';
+import InboxPage from './pages/InboxPage.jsx';
+import ProfilePage from './pages/ProfilePage.jsx';
+
+// Import Components
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 
-// --- 2. THIS IS THE NEW CODE ---
-// This tells axios what our base URL is.
-// In production (on Vercel), it will use the VITE_API_URL we set.
-// In development (local), our vite.config.js proxy is still used.
 if (import.meta.env.PROD) {
   axios.defaults.baseURL = import.meta.env.VITE_API_URL;
 }
-// --- End of New Code ---
 
 const router = createBrowserRouter([
   {
     path: '/',
     element: <App />,
     children: [
-      // Public
+      // --- Public Routes ---
       { path: '/', element: <HomePage /> },
       { path: '/login', element: <LoginPage /> },
       { path: '/register', element: <RegisterPage /> },
-      // Private (Protected)
+      { path: '/listing/:id', element: <ListingDetailPage /> },
+
+      // --- Private / Protected Routes ---
       {
         path: '',
         element: <ProtectedRoute />,
-        children: [{ path: '/create-listing', element: <CreateListingPage /> }],
+        children: [
+          { path: '/create-listing', element: <CreateListingPage /> },
+          { path: '/edit-listing/:id', element: <EditListingPage /> }, // 2. Add route
+          { path: '/chat/:listingId/:buyerId/:sellerId', element: <ChatPage /> },
+          { path: '/inbox', element: <InboxPage /> },
+          { path: '/profile', element: <ProfilePage /> },
+        ],
       },
     ],
   },

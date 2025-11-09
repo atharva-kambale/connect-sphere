@@ -25,11 +25,17 @@ const listingSchema = mongoose.Schema(
       type: String,
       required: [true, 'Please add a category (e.g., Books, Furniture)'],
     },
-    // We removed the default placeholder
-    imageUrl: {
-      type: String,
-      required: [true, 'Please add an image URL'], // Let's make it required
-    },
+    
+    // --- THIS IS THE UPGRADE ---
+    // We changed this from a single String to an Array of Strings
+    imageUrls: [
+      {
+        type: String,
+        required: true,
+      },
+    ],
+    // --- END OF UPGRADE ---
+    
     university: {
       type: String,
       required: true,

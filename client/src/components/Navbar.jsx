@@ -1,11 +1,12 @@
 // client/components/Navbar.jsx
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../store/slices/authSlice.js';
+import socket from '../socket.js';
 
-// --- (Styles) ---
+// --- (Styles - createButtonStyle is removed) ---
 const navStyle = {
   display: 'flex',
   justifyContent: 'space-between',
@@ -24,8 +25,8 @@ const logoStyle = {
 };
 const navLinksStyle = {
   display: 'flex',
-  gap: '1.5rem', // Increased gap
-  alignItems: 'center', // Center items vertically
+  gap: '1.5rem',
+  alignItems: 'center',
 };
 const navLinkStyle = {
   textDecoration: 'none',
@@ -33,19 +34,23 @@ const navLinkStyle = {
   fontSize: '1rem',
   cursor: 'pointer',
 };
-const createButtonStyle = {
-  ...navLinkStyle,
-  background: '#007bff',
-  color: 'white',
-  padding: '0.5rem 1rem',
-  borderRadius: '5px',
-};
 // --- (End of styles) ---
 
 const Navbar = () => {
   const { userInfo } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (userInfo) {
+      socket.connect();
+    } else {
+      socket.disconnect();
+    }
+    return () => {
+      socket.disconnect();
+    };
+  }, [userInfo]);
 
   const logoutHandler = () => {
     dispatch(logout());
@@ -59,16 +64,16 @@ const Navbar = () => {
       </Link>
 
       <div style={navLinksStyle}>
-        {/* 1. Show 'Create' link if user is logged in */}
-        {userInfo && (
-          <Link to="/create-listing" style={createButtonStyle}>
-            + Create Listing
-          </Link>
-        )}
-
         {userInfo ? (
           // --- If user is logged IN ---
           <>
+            <Link to="/inbox" style={navLinkStyle}>
+              Inbox
+            </Link>
+            <Link to="/profile" style={navLinkStyle}>
+              Profile
+            </Link>
+            {/* 1. --- "CREATE LISTING" BUTTON IS REMOVED --- */}
             <span style={{ ...navLinkStyle, color: '#000', cursor: 'default' }}>
               Welcome, {userInfo.name.split(' ')[0]}!
             </span>
