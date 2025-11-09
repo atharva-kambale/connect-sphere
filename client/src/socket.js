@@ -2,14 +2,19 @@
 
 import { io } from 'socket.io-client';
 
-// This is the URL of our backend server
-const URL = 'http://localhost:5000';
+// --- THIS IS THE FIX ---
+// 1. Get the production URL from Vercel's environment variables
+//    This is the *same* variable we use for axios
+const URL = import.meta.env.PROD
+  ? import.meta.env.VITE_API_URL
+  : 'http://localhost:5000'; // Fallback to localhost for development
+
+console.log(`Socket connecting to: ${URL}`); // A good log for debugging
+// --- END OF FIX ---
 
 // Create the socket instance
-// We set 'autoConnect' to false so we can
-// connect manually when we want to.
 const socket = io(URL, {
-  autoConnect: false,
+  autoConnect: false, // We still connect manually in the Navbar
 });
 
 export default socket;

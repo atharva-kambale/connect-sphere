@@ -14,11 +14,11 @@ const getMyConversations = asyncHandler(async (req, res) => {
       .sort({ updatedAt: -1 })
       .populate({
         path: 'participants',
-        select: 'name _id', // Get the name and ID of both users
+        select: 'name _id',
       })
       .populate({
-        path: 'listing',
-        select: 'title imageUrl user', // Need 'user' to find the seller
+        path: 'listing', // This is the one that can be null
+        select: 'title imageUrl user',
       })
       .populate({
         path: 'lastMessage',
@@ -27,30 +27,29 @@ const getMyConversations = asyncHandler(async (req, res) => {
 
     // Format the data to be easy for the frontend
     const formattedConversations = conversations.map((conv) => {
-      // --- THIS IS THE NEW, CORRECT LOGIC ---
-      
-      // 1. Find the other user
+      // --- THIS IS THE FIX ---
+      // 1. If the listing was deleted, conv.listing will be null.
+      //    We must check for this and skip it.
+      if (!conv.listing || !conv.participants || conv.participants.length < 2) {
+        return null; // This will be filtered out
+      }
+      // --- END OF FIX ---
+
+      // 2. Find the other user
       const otherUser = conv.participants.find(
         (p) => p._id.toString() !== req.user.id.toString()
       );
 
-      // 2. Identify the Seller and Buyer IDs
-      // The listing's 'user' field is the Seller
-      const sellerId = conv.listing.user;
-      
-      // The 'otherUser' *might* be the seller.
-      // The logged-in user (req.user.id) *might* be the seller.
-      // The Buyer is the participant who is NOT the seller.
+      // 3. Identify the Seller and Buyer IDs
+      const sellerId = conv.listing.user; // We know conv.listing exists now
       const buyer = conv.participants.find(
         (p) => p._id.toString() !== sellerId.toString()
       );
       
-      // This is a failsafe in case buyer is null
-      const buyerId = buyer ? buyer._id : otherUser._id; 
+      const buyerId = buyer ? buyer._id : otherUser._id;
 
-      // 3. Create the 100% correct, universal URL
+      // 4. Create the correct, universal URL
       const chatUrl = `/chat/${conv.listing._id}/${buyerId}/${sellerId}`;
-      // --- END OF FIX ---
 
       return {
         _id: conv._id,
@@ -58,9 +57,11 @@ const getMyConversations = asyncHandler(async (req, res) => {
         lastMessage: conv.lastMessage,
         updatedAt: conv.updatedAt,
         withUser: otherUser || { name: 'Unknown User' },
-        chatUrl: chatUrl, // This link will now work
+        chatUrl: chatUrl,
       };
-    });
+    })
+    // 5. Filter out any null conversations
+    .filter(conv => conv !== null); 
     
     res.json(formattedConversations);
     
