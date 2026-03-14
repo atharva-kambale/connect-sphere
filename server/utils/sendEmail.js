@@ -1,29 +1,23 @@
 // server/utils/sendEmail.js
-
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 const sendEmail = async (options) => {
-  // 1. Create a bulletproof transporter for Cloud Servers (Render)
-  const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,          // Explicitly use the secure port
-    secure: true,       // Force SSL/TLS
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
+  // Pulls the key you added to Render/ENV
+  const resend = new Resend(process.env.RESEND_API_KEY);
 
-  // 2. Define the email options
-  const mailOptions = {
-    from: `"Connect Sphere Admin" <${process.env.EMAIL_USER}>`,
-    to: options.email,
-    subject: options.subject,
-    text: options.message,
-  };
-
-  // 3. Send the email
-  await transporter.sendMail(mailOptions);
+  try {
+    await resend.emails.send({
+      from: 'Connect Sphere <onboarding@resend.dev>',
+      to: options.email,
+      subject: options.subject,
+      text: options.message,
+    });
+    console.log(`✅ Email sent successfully to ${options.email}`);
+  } catch (error) {
+    console.error("❌ Resend API Error:", error);
+    // We throw the error so the controller knows it failed
+    throw new Error('Email delivery failed');
+  }
 };
 
 module.exports = sendEmail;

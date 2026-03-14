@@ -9,211 +9,159 @@ import FormContainer from '../components/FormContainer.jsx';
 import { setCredentials } from '../store/slices/authSlice.js';
 
 const RegisterPage = () => {
-  // --- Form States ---
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [university, setUniversity] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
-  // --- NEW: OTP States ---
-  const [step, setStep] = useState(1); // 1 = Details form, 2 = OTP form
+  // Step 1 = Signup Form, Step 2 = OTP Input
+  const [step, setStep] = useState(1);
   const [otp, setOtp] = useState('');
-  const [registeredEmail, setRegisteredEmail] = useState(''); // To remember who is verifying
+  const [registeredEmail, setRegisteredEmail] = useState('');
   
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { userInfo } = useSelector((state) => state.auth);
 
   useEffect(() => {
-    if (userInfo) {
-      navigate('/');
-    }
+    if (userInfo) navigate('/');
   }, [navigate, userInfo]);
 
-  // --- STEP 1: Submit Details ---
+  // STEP 1: Handle Initial Registration
   const submitDetailsHandler = async (e) => {
     e.preventDefault();
     setError(null);
-    setMessage(null);
+    setLoading(true);
 
     if (password !== confirmPassword) {
       setError('Passwords do not match');
+      setLoading(false);
       return;
     }
 
     try {
-      // 1. Send data to backend (Backend will now send an email instead of a token)
-      const res = await axios.post('/api/users', {
-        name,
-        email,
-        password,
-        university,
-      });
-      
-      // 2. Save the email they used, show success message, and flip to Step 2!
-      setRegisteredEmail(res.data.email || email);
+      const res = await axios.post('/api/users', { name, email, password, university });
+      setRegisteredEmail(email);
       setMessage(res.data.message);
       setStep(2);
-
     } catch (err) {
       setError(err.response?.data?.message || 'Registration Failed');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // --- STEP 2: Submit OTP ---
+  // STEP 2: Handle OTP Verification
   const verifyOtpHandler = async (e) => {
     e.preventDefault();
     setError(null);
+    setLoading(true);
 
     try {
-      // 1. Send the OTP and Email to our new verification route
       const res = await axios.post('/api/users/verify-otp', {
         email: registeredEmail,
         otp: otp.trim(),
       });
-      
-      // 2. The backend verified them! Now we log them in using your Redux action
       dispatch(setCredentials(res.data));
       navigate('/');
-      
     } catch (err) {
-      setError(err.response?.data?.message || 'Verification Failed. Please check your code.');
+      setError(err.response?.data?.message || 'Invalid code. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // ==========================================
-  // RENDER STEP 2: THE OTP VERIFICATION SCREEN
-  // ==========================================
+  // Bonus: Handle Resending the OTP
+  const resendOtpHandler = async () => {
+    setError(null);
+    setMessage('Resending code...');
+    try {
+      await axios.post('/api/users', { name, email: registeredEmail, password, university });
+      setMessage('A new code has been sent!');
+    } catch (err) {
+      setError('Failed to resend code.');
+    }
+  };
+
+  // --- UI: OTP VERIFICATION SCREEN ---
   if (step === 2) {
     return (
       <FormContainer>
-        <h1 className="text-3xl font-extrabold text-gray-800 mb-2 text-center dark:text-white">
-          Verify Your Email
-        </h1>
+        <h1 className="text-3xl font-extrabold text-gray-800 mb-2 text-center dark:text-white">Verify Your Email</h1>
         <p className="text-center text-gray-600 dark:text-gray-300 mb-6">
-          We sent a 6-digit code to <strong className="text-blue-600 dark:text-blue-400">{registeredEmail}</strong>. 
-          It will expire in 10 minutes.
+          Code sent to <strong className="text-blue-600">{registeredEmail}</strong>
         </p>
 
-        {message && <p className="text-green-600 text-sm font-semibold mb-4 text-center">{message}</p>}
-        {error && <p className="text-red-600 text-sm font-semibold mb-4 text-center">{error}</p>}
+        {message && <p className="bg-green-100 text-green-700 p-3 rounded-lg text-sm mb-4 text-center">{message}</p>}
+        {error && <p className="bg-red-100 text-red-700 p-3 rounded-lg text-sm mb-4 text-center">{error}</p>}
 
         <form onSubmit={verifyOtpHandler} className="flex flex-col space-y-4">
-          <div className="flex flex-col space-y-1 text-center">
-            <label htmlFor="otp" className="font-medium text-gray-700 dark:text-gray-300">Enter 6-Digit Code</label>
-            <input
-              type="text"
-              id="otp"
-              maxLength="6"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              placeholder="123456"
-              className="p-3 border border-gray-300 rounded-lg text-center text-2xl tracking-widest font-bold
-                         focus:outline-none focus:ring-4 focus:ring-blue-200 transition duration-150
-                         dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              required
-            />
-          </div>
-
+          <input
+            type="text"
+            maxLength="6"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            placeholder="000000"
+            className="p-4 border border-gray-300 rounded-xl text-center text-3xl tracking-[1rem] font-black focus:ring-4 focus:ring-blue-200 dark:bg-gray-700 dark:text-white"
+            required
+          />
           <button 
             type="submit" 
-            className="bg-blue-600 text-white p-3.5 rounded-lg text-lg font-semibold 
-                       hover:bg-blue-700 transition duration-150 shadow-md"
+            disabled={loading}
+            className="bg-blue-600 text-white p-4 rounded-xl text-lg font-bold hover:bg-blue-700 transition shadow-lg disabled:opacity-50"
           >
-            Verify & Log In
+            {loading ? 'Verifying...' : 'Verify & Log In'}
           </button>
         </form>
+
+        <button onClick={resendOtpHandler} className="w-full mt-4 text-sm text-gray-500 hover:text-blue-600 transition">
+          Didn't get a code? <span className="font-bold underline">Resend Code</span>
+        </button>
       </FormContainer>
     );
   }
 
-  // ==========================================
-  // RENDER STEP 1: THE REGISTRATION FORM
-  // ==========================================
+  // --- UI: REGISTRATION FORM ---
   return (
     <FormContainer>
-      <h1 className="text-3xl font-extrabold text-gray-800 mb-6 text-center dark:text-white">
-        Create Account
-      </h1>
+      <h1 className="text-3xl font-extrabold text-gray-800 mb-6 text-center dark:text-white">Create Account</h1>
       <form onSubmit={submitDetailsHandler} className="flex flex-col space-y-4">
-        
-        {/* Name Input */}
-        <div className="flex flex-col space-y-1">
-          <label htmlFor="name" className="font-medium text-gray-700 dark:text-gray-300">Name</label>
-          <input
-            type="text" id="name" value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-200 transition duration-150 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            required
-          />
+        <div className="flex flex-col">
+          <label className="text-sm font-semibold mb-1 dark:text-gray-300">Full Name</label>
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="p-3 border rounded-lg dark:bg-gray-700 dark:text-white" required />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-sm font-semibold mb-1 dark:text-gray-300">University Email</label>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="p-3 border rounded-lg dark:bg-gray-700 dark:text-white" placeholder="student@sitrc.ac.in" required />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-sm font-semibold mb-1 dark:text-gray-300">University Name</label>
+          <input type="text" value={university} onChange={(e) => setUniversity(e.target.value)} className="p-3 border rounded-lg dark:bg-gray-700 dark:text-white" required />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col">
+            <label className="text-sm font-semibold mb-1 dark:text-gray-300">Password</label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="p-3 border rounded-lg dark:bg-gray-700 dark:text-white" required />
+          </div>
+          <div className="flex flex-col">
+            <label className="text-sm font-semibold mb-1 dark:text-gray-300">Confirm</label>
+            <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="p-3 border rounded-lg dark:bg-gray-700 dark:text-white" required />
+          </div>
         </div>
 
-        {/* Email Input */}
-        <div className="flex flex-col space-y-1">
-          <label htmlFor="email" className="font-medium text-gray-700 dark:text-gray-300">University Email Address</label>
-          <input
-            type="email" id="email" value={email} placeholder="e.g., student@sitrc.ac.in"
-            onChange={(e) => setEmail(e.target.value)}
-            className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-200 transition duration-150 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            required
-          />
-        </div>
+        {error && <p className="text-red-500 text-sm font-bold text-center">{error}</p>}
 
-        {/* University Input */}
-        <div className="flex flex-col space-y-1">
-          <label htmlFor="university" className="font-medium text-gray-700 dark:text-gray-300">University</label>
-          <input
-            type="text" id="university" value={university}
-            onChange={(e) => setUniversity(e.target.value)}
-            className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-200 transition duration-150 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            required
-          />
-        </div>
-
-        {/* Password Input */}
-        <div className="flex flex-col space-y-1">
-          <label htmlFor="password" className="font-medium text-gray-700 dark:text-gray-300">Password</label>
-          <input
-            type="password" id="password" value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-200 transition duration-150 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            required
-          />
-        </div>
-
-        {/* Confirm Password Input */}
-        <div className="flex flex-col space-y-1">
-          <label htmlFor="confirmPassword" className="font-medium text-gray-700 dark:text-gray-300">Confirm Password</label>
-          <input
-            type="password" id="confirmPassword" value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-200 transition duration-150 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            required
-          />
-        </div>
-
-        {/* Error Message */}
-        {error && <p className="text-red-600 text-sm font-semibold">{error}</p>}
-
-        {/* Submit Button */}
-        <button 
-          type="submit" 
-          className="bg-green-600 text-white p-3.5 rounded-lg text-lg font-semibold hover:bg-green-700 transition duration-150 shadow-md"
-        >
-          Sign Up
+        <button type="submit" disabled={loading} className="bg-green-600 text-white p-4 rounded-xl text-lg font-bold hover:bg-green-700 transition shadow-lg">
+          {loading ? 'Sending Code...' : 'Sign Up'}
         </button>
       </form>
-
-      {/* Login Link */}
       <div className="mt-6 text-center text-sm dark:text-gray-400">
-        Already have an account?{' '}
-        <Link to="/login" className="text-blue-600 hover:text-blue-800 font-bold dark:text-blue-400 dark:hover:text-blue-300">
-          Login
-        </Link>
+        Already have an account? <Link to="/login" className="text-blue-600 font-bold">Login</Link>
       </div>
     </FormContainer>
   );

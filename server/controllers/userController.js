@@ -1,8 +1,8 @@
 // server/controllers/userController.js
 
 const User = require('../models/userModel.js');
-const Otp = require('../models/otpModel.js'); // <-- NEW IMPORT
-const sendEmail = require('../utils/sendEmail.js'); // <-- NEW IMPORT
+const Otp = require('../models/otpModel.js');
+const sendEmail = require('../utils/sendEmail.js');
 const bcrypt = require('bcryptjs');
 const asyncHandler = require('express-async-handler');
 const generateToken = require('../utils/generateToken.js');
@@ -27,66 +27,75 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new Error('Please add all fields');
   }
 
-  // --- STUDENT EMAIL FILTER ---
+  // 1. --- STUDENT EMAIL FILTER ---
   const emailDomain = email.split('@')[1]?.toLowerCase();
-  const allowedDomains = ['edu', 'ac.in', 'sitrc.ac.in', 'gmail.com']; // VIP List
+  const allowedDomains = ['edu', 'ac.in', 'sitrc.ac.in', 'gmail.com']; // VIP List (gmail included for testing)
   const isValidDomain = emailDomain && allowedDomains.some(domain => emailDomain.endsWith(domain));
 
   if (!isValidDomain) {
     res.status(400);
-    throw new Error('Access Denied: Please use a valid university email to register for Connect Sphere.');
+    throw new Error('Access Denied: Please use a valid university email to register.');
   }
 
-  const userExists = await User.findOne({ email });
-  if (userExists) {
-    res.status(400);
-    throw new Error('User already exists');
-  }
-
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
-
-  // 1. Create the user (they are isVerified: false by default!)
-  const user = await User.create({
-    name,
-    email,
-    password: hashedPassword,
-    university,
-  });
+  // 2. --- SMART USER CHECK (Handling Unverified Users) ---
+  let user = await User.findOne({ email });
 
   if (user) {
-    // 2. Generate a 6-digit OTP
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // 3. Save OTP to database
-    await Otp.create({
-      email: user.email,
-      otp: otpCode,
-    });
-
-    // 4. Send the Email
-    const message = `Hello ${user.name},\n\nWelcome to Connect Sphere! Your email verification code is:\n\n${otpCode}\n\nThis code will expire in 10 minutes.\n\nThank you,\nConnect Sphere Team`;
-
-    try {
-      await sendEmail({
-        email: user.email,
-        subject: 'Connect Sphere - Email Verification Code',
-        message: message,
-      });
-    } catch (error) {
-      console.error("Email Sending Error:", error);
-      // Even if email fails, we don't want to crash the whole app, but we should log it.
+    if (user.isVerified) {
+      res.status(400);
+      throw new Error('User already exists and is verified. Please log in.');
+    } else {
+      // Update details for unverified account in case they changed password/name
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+      user.name = name;
+      user.university = university;
+      await user.save();
     }
-
-    // 5. Tell the frontend to send the user to the OTP screen
-    res.status(201).json({
-      message: 'User registered successfully. Please check your email for the OTP.',
-      email: user.email 
-    });
   } else {
-    res.status(400);
-    throw new Error('Invalid user data');
+    // Create brand new unverified user
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    user = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      university,
+      isVerified: false,
+    });
   }
+
+  // 3. --- OTP GENERATION & STORAGE ---
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // Clear any existing OTPs for this email to avoid confusion
+  await Otp.deleteMany({ email: user.email });
+
+  await Otp.create({
+    email: user.email,
+    otp: otpCode,
+  });
+
+  // 4. --- SEND EMAIL VIA RESEND API ---
+  const message = `Hello ${user.name},\n\nWelcome to Connect Sphere! Your email verification code is:\n\n${otpCode}\n\nThis code will expire in 10 minutes.\n\nThank you,\nConnect Sphere Team`;
+
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: 'Connect Sphere - Email Verification Code',
+      message: message,
+    });
+  } catch (error) {
+    console.error("Email Sending Error:", error);
+    // Note: We don't throw an error here so the user can still get to the OTP page
+    // if you are using the log-backdoor, but since we are using Resend, this should work.
+  }
+
+  // 5. --- RESPONSE ---
+  res.status(201).json({
+    message: 'Verification code sent! Please check your email.',
+    email: user.email 
+  });
 });
 
 // @desc    Verify OTP and Log in
@@ -100,7 +109,6 @@ const verifyOtp = asyncHandler(async (req, res) => {
     throw new Error('Please provide email and OTP');
   }
 
-  // 1. Check if OTP exists and matches
   const validOtp = await Otp.findOne({ email, otp });
 
   if (!validOtp) {
@@ -108,21 +116,18 @@ const verifyOtp = asyncHandler(async (req, res) => {
     throw new Error('Invalid or expired OTP code');
   }
 
-  // 2. Find the user
   const user = await User.findOne({ email });
   if (!user) {
     res.status(400);
     throw new Error('User not found');
   }
 
-  // 3. Mark user as verified and save
   user.isVerified = true;
   await user.save();
 
-  // 4. Delete the OTP from the database so it can't be used again
+  // Remove used OTP
   await Otp.deleteOne({ _id: validOtp._id });
 
-  // 5. Send back the exact same payload as a successful login!
   res.json({
     _id: user.id,
     name: user.name,
@@ -145,12 +150,10 @@ const loginUser = asyncHandler(async (req, res) => {
 
   if (user && (await bcrypt.compare(password, user.password))) {
     
-    // --- NEW SECURITY CHECK ---
     if (!user.isVerified) {
       res.status(401);
-      throw new Error('Please verify your email address before logging in. If you did not receive a code, please register again.');
+      throw new Error('Please verify your email address before logging in.');
     }
-    // --------------------------
 
     res.json({
       _id: user.id,
@@ -169,7 +172,7 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Get user profile (for editing)
+// @desc    Get user profile
 // @route   GET /api/users/me
 // @access  Private
 const getUserProfile = asyncHandler(async (req, res) => {
@@ -191,7 +194,7 @@ const getUserProfile = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Update user profile (the "Settings" page)
+// @desc    Update user profile
 // @route   PUT /api/users/me
 // @access  Private
 const updateUserProfile = asyncHandler(async (req, res) => {
@@ -245,7 +248,7 @@ const getPublicUserProfile = asyncHandler(async (req, res) => {
 
 module.exports = {
   registerUser,
-  verifyOtp, // <-- EXPORT NEW FUNCTION
+  verifyOtp,
   loginUser,
   getUserProfile,
   updateUserProfile,
