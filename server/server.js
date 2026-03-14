@@ -71,22 +71,33 @@ io.on('connection', (socket) => {
   // --- THIS IS THE FIX ---
   socket.on('send_message', async (data) => {
     try {
-      // 'data.senderName' will now be correctly received
       const { listingId, participants, room, senderId, message, senderName } = data;
 
       // 1. Save Message
       const newMessage = new Message({ room: room, sender: senderId, content: message });
       const savedMessage = await newMessage.save();
 
-      // 2. Find/Create Conversation
-      const conversation = await Conversation.findOneAndUpdate(
-        { listing: listingId, participants: { $all: participants } },
-        { $set: { participants: participants, listing: listingId, lastMessage: savedMessage._id } },
-        { upsert: true, new: true }
-      );
+      // 2. Find/Create Conversation (FIXED: Safely handles MongoDB arrays)
+      let conversation = await Conversation.findOne({
+        listing: listingId,
+        participants: { $all: participants }
+      });
+
+      if (conversation) {
+        // If conversation exists, update the last message
+        conversation.lastMessage = savedMessage._id;
+        await conversation.save();
+      } else {
+        // If it does not exist, create a new conversation
+        conversation = new Conversation({
+          listing: listingId,
+          participants: participants,
+          lastMessage: savedMessage._id
+        });
+        await conversation.save();
+      }
 
       // 3. Broadcast to chat room
-      // We also send 'senderName' to the chat room
       socket.to(room).emit('receive_message', { ...data, sender: senderName }); 
       
       // 4. Create/Send Notification
@@ -97,12 +108,12 @@ io.on('connection', (socket) => {
         const notification = new Notification({
           user: recipientId,
           sender: senderId,
-          senderName: senderName, // This value is now correct
+          senderName: senderName,
           conversation: conversation._id,
           linkUrl: chatUrl,
           message: `New message from ${senderName}: "${message.substring(0, 20)}..."`,
         });
-        await notification.save(); // This will no longer fail
+        await notification.save();
 
         // Send live socket notification
         io.to(recipientId).emit('new_message_notification', {
@@ -123,14 +134,14 @@ io.on('connection', (socket) => {
   });
 });
 
-// --- Express Middleware (no change) ---
+// --- Express Middleware ---
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 const PORT = process.env.PORT || 5000;
 
-// --- API Routes (no change) ---
+// --- API Routes ---
 app.get('/', (req, res) => {
   res.send('API is running...');
 });
@@ -142,7 +153,7 @@ app.use('/api/conversations', conversationRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/notifications', notificationRoutes);
 
-// --- Error Handler (no change) ---
+// --- Error Handler ---
 app.use(errorHandler);
 
 // --- Start Server (Updated for Render) ---
