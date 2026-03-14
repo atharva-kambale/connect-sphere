@@ -6,23 +6,21 @@ const {
   createListing,
   getListings,
   getListingById,
-  getMyListings, // 1. Import new function
+  getMyListings,
   updateListing,
   deleteListing,
 } = require('../controllers/listingController.js');
 const { protect } = require('../middleware/authMiddleware.js');
 
-// This chains all requests for the base '/' route
+// Base routes
 router.route('/')
-  .post(protect, createListing) // POST /api/listings
-  .get(getListings);             // GET /api/listings
+  .post(protect, createListing)
+  .get(getListings);             
 
-// --- 2. ADD THE NEW ROUTE ---
-// This MUST be before the '/:id' route
+// Specific route MUST be before '/:id'
 router.route('/my-listings').get(protect, getMyListings);
-// --- END OF NEW ROUTE ---
 
-// This chains all requests for a specific ID '/:id'
+// ID routes at the bottom
 router.route('/:id')
   .get(getListingById)
   .put(protect, updateListing)

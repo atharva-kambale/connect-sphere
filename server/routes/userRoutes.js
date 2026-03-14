@@ -7,7 +7,7 @@ const {
   loginUser,
   getUserProfile,
   updateUserProfile,
-  getPublicUserProfile, // 1. Import new function
+  getPublicUserProfile, 
 } = require('../controllers/userController.js');
 const { protect } = require('../middleware/authMiddleware.js');
 
@@ -15,14 +15,12 @@ const { protect } = require('../middleware/authMiddleware.js');
 router.post('/', registerUser);
 router.post('/login', loginUser);
 
-// Private "me" route for settings
-router
-  .route('/me')
+// Private "me" route
+router.route('/me')
   .get(protect, getUserProfile)
   .put(protect, updateUserProfile);
 
-// --- 2. ADD THE NEW PUBLIC ROUTE ---
-// This MUST be last, so '/me' is checked first.
-router.route('/:id').get(getPublicUserProfile); // GET /api/users/<user_id>
+// Public profile route MUST be last
+router.route('/:id').get(getPublicUserProfile); 
 
 module.exports = router;
