@@ -3,12 +3,14 @@
 const nodemailer = require('nodemailer');
 
 const sendEmail = async (options) => {
-  // 1. Create a transporter (the email service)
+  // 1. Create a bulletproof transporter for Cloud Servers (Render)
   const transporter = nodemailer.createTransport({
-    service: 'gmail', // We will use Gmail for now
+    host: 'smtp.gmail.com',
+    port: 465,          // Explicitly use the secure port
+    secure: true,       // Force SSL/TLS
     auth: {
-      user: process.env.EMAIL_USER, // Your developer gmail
-      pass: process.env.EMAIL_PASS, // Your special App Password
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
     },
   });
 
@@ -18,7 +20,6 @@ const sendEmail = async (options) => {
     to: options.email,
     subject: options.subject,
     text: options.message,
-    // You can also use html: options.html if you want to make the email look fancy later!
   };
 
   // 3. Send the email
