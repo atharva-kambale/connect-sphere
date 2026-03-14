@@ -4,10 +4,10 @@ import React from 'react';
 
 const FormContainer = ({ children }) => {
   return (
-    // Tailwind classes: Flex, center content, margin-top (mt-8), shadow-xl
-    <div className="flex justify-center items-start pt-8 min-h-screen">
-      {/* Tailwind classes: Max width (max-w-xl), padding, background, rounded, shadow */}
-      <div className="w-full max-w-xl p-6 bg-white rounded-xl shadow-2xl">
+    // Add pt-24 (for the navbar) and pb-12 (for bottom space)
+    <div className="flex justify-center items-start pt-24 pb-12 min-h-screen">
+      <div className="w-full max-w-xl p-6 bg-white rounded-lg shadow-xl
+                      dark:bg-gray-800 dark:border dark:border-gray-700">
         {children}
       </div>
     </div>

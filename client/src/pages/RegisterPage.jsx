@@ -52,70 +52,88 @@ const RegisterPage = () => {
 
   return (
     <FormContainer>
-      <h1 className="text-3xl font-extrabold text-gray-800 mb-6 text-center">Create Account</h1>
+      <h1 className="text-3xl font-extrabold text-gray-800 mb-6 text-center
+                     dark:text-white">
+        Create Account
+      </h1>
       <form onSubmit={submitHandler} className="flex flex-col space-y-4">
         
         {/* Name Input */}
         <div className="flex flex-col space-y-1">
-          <label htmlFor="name" className="font-medium text-gray-700">Name</label>
+          <label htmlFor="name" className="font-medium text-gray-700 dark:text-gray-300">Name</label>
           <input
             type="text"
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-200 transition duration-150"
+            className="p-3 border border-gray-300 rounded-lg 
+                       focus:outline-none focus:ring-4 focus:ring-blue-200 
+                       transition duration-150
+                       dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             required
           />
         </div>
 
         {/* Email Input */}
         <div className="flex flex-col space-y-1">
-          <label htmlFor="email" className="font-medium text-gray-700">Email Address</label>
+          <label htmlFor="email" className="font-medium text-gray-700 dark:text-gray-300">Email Address</label>
           <input
             type="email"
             id="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-200 transition duration-150"
+            className="p-3 border border-gray-300 rounded-lg 
+                       focus:outline-none focus:ring-4 focus:ring-blue-200 
+                       transition duration-150
+                       dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             required
           />
         </div>
 
         {/* University Input */}
         <div className="flex flex-col space-y-1">
-          <label htmlFor="university" className="font-medium text-gray-700">University</label>
+          <label htmlFor="university" className="font-medium text-gray-700 dark:text-gray-300">University</label>
           <input
             type="text"
             id="university"
             value={university}
             onChange={(e) => setUniversity(e.target.value)}
-            className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-200 transition duration-150"
+            className="p-3 border border-gray-300 rounded-lg 
+                       focus:outline-none focus:ring-4 focus:ring-blue-200 
+                       transition duration-150
+                       dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             required
           />
         </div>
 
         {/* Password Input */}
         <div className="flex flex-col space-y-1">
-          <label htmlFor="password" className="font-medium text-gray-700">Password</label>
+          <label htmlFor="password" className="font-medium text-gray-700 dark:text-gray-300">Password</label>
           <input
             type="password"
             id="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-200 transition duration-150"
+            className="p-3 border border-gray-300 rounded-lg 
+                       focus:outline-none focus:ring-4 focus:ring-blue-200 
+                       transition duration-150
+                       dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             required
           />
         </div>
 
         {/* Confirm Password Input */}
         <div className="flex flex-col space-y-1">
-          <label htmlFor="confirmPassword" className="font-medium text-gray-700">Confirm Password</label>
+          <label htmlFor="confirmPassword" className="font-medium text-gray-700 dark:text-gray-300">Confirm Password</label>
           <input
             type="password"
             id="confirmPassword"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-200 transition duration-150"
+            className="p-3 border border-gray-300 rounded-lg 
+                       focus:outline-none focus:ring-4 focus:ring-blue-200 
+                       transition duration-150
+                       dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             required
           />
         </div>
@@ -126,16 +144,17 @@ const RegisterPage = () => {
         {/* Submit Button */}
         <button 
           type="submit" 
-          className="bg-green-600 text-white p-3.5 rounded-lg text-lg font-semibold hover:bg-green-700 transition duration-150 shadow-md"
+          className="bg-green-600 text-white p-3.5 rounded-lg text-lg font-semibold 
+                     hover:bg-green-700 transition duration-150 shadow-md"
         >
           Register
         </button>
       </form>
 
       {/* Login Link */}
-      <div className="mt-6 text-center text-sm">
+      <div className="mt-6 text-center text-sm dark:text-gray-400">
         Already have an account?{' '}
-        <Link to="/login" className="text-blue-600 hover:text-blue-800 font-bold">
+        <Link to="/login" className="text-blue-600 hover:text-blue-800 font-bold dark:text-blue-400 dark:hover:text-blue-300">
           Login
         </Link>
       </div>

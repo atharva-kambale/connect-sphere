@@ -14,6 +14,7 @@
     "axios": "^1.13.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-icons": "^5.5.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.9.5",
     "socket.io-client": "^4.8.1"
@@ -32,6 +33,7 @@
     "globals": "^16.4.0",
     "postcss": "^7.0.39",
     "tailwindcss": "npm:@tailwindcss/postcss7-compat@^2.2.17",
+    "tailwindcss-animation-delay": "^2.0.2",
     "vite": "^7.1.7"
   }
 }

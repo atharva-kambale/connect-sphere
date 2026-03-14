@@ -3,21 +3,9 @@
 const asyncHandler = require('express-async-handler');
 const Listing = require('../models/listingModel.js');
 
-// Helper function to filter unwanted fields (copied from userController)
-const filterObj = (obj, ...allowedFields) => {
-  const newObj = {};
-  Object.keys(obj).forEach(el => {
-    if (allowedFields.includes(el)) newObj[el] = obj[el];
-  });
-  return newObj;
-};
-
-// @desc    Create a new listing
-// @route   POST /api/listings
-// @access  Private
+// ... (createListing function is the same)
 const createListing = asyncHandler(async (req, res) => {
   const { title, description, price, category, imageUrls } = req.body;
-
   if (!title || !description || !price || !category) {
     res.status(400);
     throw new Error('Please add all fields');
@@ -26,17 +14,11 @@ const createListing = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error('Please add at least one image');
   }
-
   const listing = await Listing.create({
-    title,
-    description,
-    price,
-    category,
-    imageUrls,
+    title, description, price, category, imageUrls,
     user: req.user.id,
     university: req.user.university,
   });
-
   res.status(201).json(listing);
 });
 
@@ -44,106 +26,73 @@ const createListing = asyncHandler(async (req, res) => {
 // @route   GET /api/listings
 // @access  Public
 const getListings = asyncHandler(async (req, res) => {
-  const keyword = req.query.keyword
-    ? { title: { $regex: req.query.keyword, $options: 'i', }, }
-    : {};
-  const category = req.query.category
-    ? { category: req.query.category, }
-    : {};
-  
-  const listings = await Listing.find({ ...keyword, ...category }).sort({ createdAt: -1 });
-  res.json(listings);
-});
+  // --- 1. THIS IS THE UPGRADE ---
+  // Build a 'filter' object
+  const filter = {};
 
-// @desc    Get a single listing by ID
-// @route   GET /api/listings/:id
-// @access  Public
-const getListingById = asyncHandler(async (req, res) => {
-  const listing = await Listing.findById(req.params.id).populate(
-    'user',
-    'name email rating numReviews'
-  );
-
-  if (listing) {
-    res.json(listing);
-  } else {
-    res.status(404);
-    throw new Error('Listing not found');
+  // Add keyword filter
+  if (req.query.keyword) {
+    filter.title = {
+      $regex: req.query.keyword,
+      $options: 'i',
+    };
   }
-});
-
-// @desc    Get listings for the logged-in user
-// @route   GET /api/listings/my-listings
-// @access  Private
-const getMyListings = asyncHandler(async (req, res) => {
-  const listings = await Listing.find({ user: req.user.id }).sort({
-    createdAt: -1,
-  });
+    
+  // Add category filter
+  if (req.query.category) {
+    filter.category = req.query.category;
+  }
+  
+  // Add USER filter (for the public profile)
+  if (req.query.user) {
+    filter.user = req.query.user;
+  }
+  
+  // 3. Find using the combined filter object
+  const listings = await Listing.find(filter).sort({ createdAt: -1 });
+  // --- END OF UPGRADE ---
+  
   res.json(listings);
 });
 
-// @desc    Update a listing
-// @route   PUT /api/listings/:id
-// @access  Private
+// ... (getListingById, updateListing, deleteListing functions are the same)
+const getListingById = asyncHandler(async (req, res) => {
+  const listing = await Listing.findById(req.params.id).populate('user', 'name email rating numReviews');
+  if (listing) { res.json(listing); } else { res.status(404); throw new Error('Listing not found'); }
+});
+
+const getMyListings = asyncHandler(async (req, res) => {
+  const listings = await Listing.find({ user: req.user.id }).sort({ createdAt: -1 });
+  res.json(listings);
+});
+
 const updateListing = asyncHandler(async (req, res) => {
   const listing = await Listing.findById(req.params.id);
-
-  if (!listing) {
-    res.status(404);
-    throw new Error('Listing not found');
-  }
-
-  if (listing.user.toString() !== req.user.id) {
-    res.status(401);
-    throw new Error('User not authorized to update this listing');
-  }
-
-  // --- CRITICAL SECURITY FIX ---
-  // Only allow updating these fields!
-  const filteredBody = filterObj(req.body, 
-    'title', 
-    'description', 
-    'price', 
-    'category', 
-    'imageUrls', 
-    'isSold' // Allow status change if user is marking it sold
-  );
-  // --- END FIX ---
-
-  const updatedListing = await Listing.findByIdAndUpdate(
-    req.params.id,
-    filteredBody, // Use the sanitized body
-    {
-      new: true,
-      runValidators: true, // Re-run schema validators on update
-    }
-  );
-
+  if (!listing) { res.status(404); throw new Error('Listing not found'); }
+  if (listing.user.toString() !== req.user.id) { res.status(401); throw new Error('User not authorized'); }
+  const filteredBody = filterObj(req.body, 'title', 'description', 'price', 'category', 'imageUrls', 'isSold');
+  const updatedListing = await Listing.findByIdAndUpdate(req.params.id, filteredBody, { new: true, runValidators: true });
   res.json(updatedListing);
 });
 
-// @desc    Delete a listing
-// @route   DELETE /api/listings/:id
-// @access  Private
 const deleteListing = asyncHandler(async (req, res) => {
   const listing = await Listing.findById(req.params.id);
-
-  if (!listing) {
-    res.status(404);
-    throw new Error('Listing not found');
-  }
-
-  if (listing.user.toString() !== req.user.id) {
-    res.status(401);
-    throw new Error('User not authorized to delete this listing');
-  }
-
+  if (!listing) { res.status(404); throw new Error('Listing not found'); }
+  if (listing.user.toString() !== req.user.id) { res.status(401); throw new Error('User not authorized'); }
   await Listing.findByIdAndDelete(req.params.id);
-
   res.json({ id: req.params.id, message: 'Listing removed' });
 });
 
-// Export all functions
+// Helper function (must be at the bottom or top level)
+const filterObj = (obj, ...allowedFields) => {
+  const newObj = {};
+  Object.keys(obj).forEach(el => {
+    if (allowedFields.includes(el)) newObj[el] = obj[el];
+  });
+  return newObj;
+};
+
+// --- UPDATE THE EXPORTS ---
 module.exports = {
   createListing,
   getListings,

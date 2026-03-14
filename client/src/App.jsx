@@ -1,22 +1,28 @@
 // client/src/App.jsx
 
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation }from 'react-router-dom';
 import Navbar from './components/Navbar.jsx';
-import Footer from './components/Footer.jsx'; // 1. Import Footer
+import Footer from './components/Footer.jsx';
 
 const App = () => {
+  const location = useLocation();
+  const isLandingPage = location.pathname === '/';
+
   return (
-    // Apply min-h-screen to ensure footer is at the bottom
-    <div className="min-h-screen flex flex-col bg-gray-50"> 
+    // We set the base background color here.
+    // On the landing page, the 'bg-gray-50' won't be visible
+    // because the hero section covers it.
+    <div className={`flex flex-col min-h-screen ${!isLandingPage ? 'bg-gray-50 dark:bg-gray-900' : 'dark:bg-gray-900'}`}> 
       <Navbar />
       
-      {/* 2. Main content area - flex-grow ensures it takes all available space */}
-      <main className="flex-grow max-w-6xl mx-auto px-4 py-8 w-full"> 
+      {/* THIS IS THE FIX:
+        'pt-20' is REMOVED. The child pages will handle their own padding.
+      */}
+      <main className="flex-grow">
         <Outlet />
       </main>
       
-      {/* 3. Add the Footer */}
       <Footer />
     </div>
   );
