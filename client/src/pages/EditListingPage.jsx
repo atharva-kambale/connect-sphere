@@ -119,7 +119,12 @@ const EditListingPage = () => {
       if (newImages.length > 0) {
         imagePreviews.forEach(url => URL.revokeObjectURL(url));
       }
-      navigate('/profile');
+      
+      // --- THE FIX ---
+      // Redirect back to the specific listing page instead of '/profile'
+      navigate(`/listing/${listingId}`); 
+      // ---------------
+
     } catch (createError) {
       setError(createError.response?.data?.message || 'Listing update failed');
       setUploading(false);
