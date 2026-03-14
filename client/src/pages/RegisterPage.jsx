@@ -15,7 +15,6 @@ const RegisterPage = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
-  // Step 1 = Signup Form, Step 2 = OTP Input
   const [step, setStep] = useState(1);
   const [otp, setOtp] = useState('');
   const [registeredEmail, setRegisteredEmail] = useState('');
@@ -32,10 +31,10 @@ const RegisterPage = () => {
     if (userInfo) navigate('/');
   }, [navigate, userInfo]);
 
-  // STEP 1: Handle Initial Registration
   const submitDetailsHandler = async (e) => {
     e.preventDefault();
     setError(null);
+    setMessage(null);
     setLoading(true);
 
     if (password !== confirmPassword) {
@@ -46,7 +45,7 @@ const RegisterPage = () => {
 
     try {
       const res = await axios.post('/api/users', { name, email, password, university });
-      setRegisteredEmail(email);
+      setRegisteredEmail(email.trim().toLowerCase()); // Store it clean
       setMessage(res.data.message);
       setStep(2);
     } catch (err) {
@@ -56,7 +55,6 @@ const RegisterPage = () => {
     }
   };
 
-  // STEP 2: Handle OTP Verification
   const verifyOtpHandler = async (e) => {
     e.preventDefault();
     setError(null);
@@ -70,25 +68,23 @@ const RegisterPage = () => {
       dispatch(setCredentials(res.data));
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid code. Please try again.');
+      setError(err.response?.data?.message || 'Verification failed. Try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Bonus: Handle Resending the OTP
   const resendOtpHandler = async () => {
     setError(null);
-    setMessage('Resending code...');
+    setMessage('Sending a new code...');
     try {
       await axios.post('/api/users', { name, email: registeredEmail, password, university });
-      setMessage('A new code has been sent!');
+      setMessage('A new code has been sent to your email.');
     } catch (err) {
-      setError('Failed to resend code.');
+      setError('Could not resend code. Please try again.');
     }
   };
 
-  // --- UI: OTP VERIFICATION SCREEN ---
   if (step === 2) {
     return (
       <FormContainer>
@@ -118,15 +114,13 @@ const RegisterPage = () => {
             {loading ? 'Verifying...' : 'Verify & Log In'}
           </button>
         </form>
-
-        <button onClick={resendOtpHandler} className="w-full mt-4 text-sm text-gray-500 hover:text-blue-600 transition">
+        <button onClick={resendOtpHandler} className="w-full mt-4 text-sm text-gray-500 hover:text-blue-600">
           Didn't get a code? <span className="font-bold underline">Resend Code</span>
         </button>
       </FormContainer>
     );
   }
 
-  // --- UI: REGISTRATION FORM ---
   return (
     <FormContainer>
       <h1 className="text-3xl font-extrabold text-gray-800 mb-6 text-center dark:text-white">Create Account</h1>
@@ -153,16 +147,11 @@ const RegisterPage = () => {
             <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="p-3 border rounded-lg dark:bg-gray-700 dark:text-white" required />
           </div>
         </div>
-
         {error && <p className="text-red-500 text-sm font-bold text-center">{error}</p>}
-
         <button type="submit" disabled={loading} className="bg-green-600 text-white p-4 rounded-xl text-lg font-bold hover:bg-green-700 transition shadow-lg">
           {loading ? 'Sending Code...' : 'Sign Up'}
         </button>
       </form>
-      <div className="mt-6 text-center text-sm dark:text-gray-400">
-        Already have an account? <Link to="/login" className="text-blue-600 font-bold">Login</Link>
-      </div>
     </FormContainer>
   );
 };
