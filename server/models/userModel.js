@@ -21,6 +21,10 @@ const userSchema = mongoose.Schema(
       type: String,
       required: [true, 'Please add your university'],
     },
+    isVerified: {
+    type: Boolean,
+    default: false, // Everyone starts as unverified!
+    },
     rating: {
       type: Number,
       required: true,
