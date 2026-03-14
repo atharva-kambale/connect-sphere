@@ -47,7 +47,7 @@ const ChatPage = () => {
     const handleReceiveMessage = (data) => {
       const incomingMessage = {
         content: data.message,
-        sender: { _id: data.senderId, name: data.senderName }, // Use senderName here too
+        sender: { _id: data.senderId, name: data.senderName },
       };
       setMessages((prevMessages) => [...prevMessages, incomingMessage]);
     };
@@ -57,7 +57,6 @@ const ChatPage = () => {
     };
   }, []);
 
-  // --- THIS IS THE FIX ---
   // Send Message
   const sendMessage = (e) => {
     e.preventDefault();
@@ -65,7 +64,7 @@ const ChatPage = () => {
       const messageData = {
         room: roomName,
         message: message.trim(),
-        senderName: userInfo.name, // The key is now 'senderName'
+        senderName: userInfo.name,
         senderId: userInfo._id,
         listingId: listingId,
         participants: [buyerId, sellerId],
@@ -80,7 +79,6 @@ const ChatPage = () => {
       setMessage('');
     }
   };
-  // --- END OF FIX ---
 
   // Auto-scroll
   useEffect(() => {
@@ -89,13 +87,15 @@ const ChatPage = () => {
 
   return (
     <>
-      <div className="max-w-4xl mx-auto p-4 pt-24">
-        {/* Main chat container */}
+      <div className="max-w-4xl mx-auto p-4 pt-28 pb-10">
+        
+        {/* Main chat container - STRICT HEIGHT LOCKED */}
+        {/* I changed h-[75vh] to a fixed pixel fallback with standard vh so mobile browsers don't resize it */}
         <div className="bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden 
-                        flex flex-col h-[75vh] dark:bg-gray-800 dark:border-gray-700">
+                        flex flex-col h-[600px] sm:h-[75vh] dark:bg-gray-800 dark:border-gray-700">
           
-          {/* Chat Header */}
-          <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center
+          {/* Chat Header (Fixed at top) */}
+          <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center shrink-0
                           dark:bg-gray-700 dark:border-gray-600">
             <div>
               <h3 className="text-lg font-bold text-gray-800 dark:text-white truncate">{listingTitle}</h3>
@@ -112,8 +112,8 @@ const ChatPage = () => {
             )}
           </div>
 
-          {/* Messages Area */}
-          <div className="flex-grow p-4 overflow-y-auto space-y-4 bg-gray-100 dark:bg-gray-900">
+          {/* Messages Area - THE FIX IS HERE (flex-1 and min-h-0) */}
+          <div className="flex-1 min-h-0 p-4 overflow-y-auto space-y-4 bg-gray-100 dark:bg-gray-900">
             {loading && <p className="text-center text-gray-500 dark:text-gray-400">Loading history...</p>}
             
             {messages.map((msg, index) => (
@@ -128,24 +128,25 @@ const ChatPage = () => {
                       : 'bg-white text-gray-800 border dark:bg-gray-700 dark:text-white dark:border-gray-600 rounded-bl-lg'
                   }`}
                 >
-                  <strong className="block text-sm">
+                  <strong className="block text-sm mb-1 opacity-80">
                     {msg.sender._id === userInfo._id ? 'You' : msg.sender.name}
                   </strong>
-                  <p className="text-md">{msg.content}</p>
+                  <p className="text-md leading-relaxed">{msg.content}</p>
                 </div>
               </div>
             ))}
+            {/* Invisible div to scroll to */}
             <div ref={messagesEndRef} />
           </div>
           
-          {/* Input Form */}
-          <form className="p-4 bg-white border-t border-gray-200 flex space-x-3
+          {/* Input Form (Fixed at bottom) */}
+          <form className="p-4 bg-white border-t border-gray-200 flex space-x-3 shrink-0
                            dark:bg-gray-800 dark:border-gray-700" 
                 onSubmit={sendMessage}>
             <input
               type="text"
               className="flex-grow p-3 border border-gray-300 rounded-lg 
-                         focus:ring-4 focus:ring-blue-200
+                         focus:outline-none focus:ring-2 focus:ring-blue-500
                          dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               placeholder="Type your message..."
               value={message}
@@ -153,8 +154,10 @@ const ChatPage = () => {
             />
             <button 
               type="submit" 
+              disabled={!message.trim()}
               className="px-6 py-3 text-white bg-blue-600 rounded-lg font-semibold 
-                         hover:bg-blue-700 transition duration-150 shadow-md"
+                         hover:bg-blue-700 transition duration-150 shadow-md
+                         disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               Send
             </button>
