@@ -12,7 +12,7 @@ import axios from 'axios';
 // --- Bell Icon Component (No change) ---
 const NotificationBell = ({ hasNotification, onClick }) => {
   const { theme } = useTheme();
-  const iconColorClass = theme === 'dark' 
+  const iconColorClass = theme === 'white' 
     ? 'text-gray-300 hover:text-white' 
     : 'text-gray-600 hover:text-blue-600';
 
@@ -21,7 +21,8 @@ const NotificationBell = ({ hasNotification, onClick }) => {
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
         <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
       </svg>
-      {hasNotification && (
+      {/* The badge will now render if hasNotification is greater than 0 */}
+      {hasNotification > 0 && (
         <span className="absolute -top-2 -right-2 flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-xs font-bold ring-2 ring-white dark:ring-gray-800">
           {hasNotification > 9 ? '9+' : hasNotification}
         </span>
@@ -69,7 +70,9 @@ const Navbar = () => {
           const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
           const { data } = await axios.get('/api/notifications', config);
           if (data && data.length > 0) {
-            setNotificationCount(data.length);
+            // Count how many notifications are actually unread
+            const unreadCount = data.filter(n => !n.isRead).length;
+            setNotificationCount(unreadCount);
           }
         } catch (err) { console.error('Failed to fetch notifications', err); }
       };
@@ -142,16 +145,16 @@ const Navbar = () => {
           {userInfo ? (
             // --- If user is logged IN ---
             <>
-              {/* "+ Create Listing" button is REMOVED from here */}
-              
               <button onClick={handleInboxClick} className={linkClasses}>
                 Inbox
               </button>
               
+              {/* --- FIX APPLIED HERE: Changed 'count' to 'hasNotification' --- */}
               <NotificationBell 
-                count={notificationCount} 
+                hasNotification={notificationCount} 
                 onClick={handleInboxClick}
               />
+              {/* ------------------------------------------------------------ */}
               
               <ProfileDropdown />
             </>
