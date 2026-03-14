@@ -1,28 +1,28 @@
-// server/routes/userRoutes.js
-
 const express = require('express');
 const router = express.Router();
-const {
-  registerUser,
-  verifyOtp,
-  loginUser,
-  getUserProfile,
-  updateUserProfile,
-  getPublicUserProfile, 
+const { 
+  registerUser, verifyOtp, loginUser, 
+  forgotPassword, resetPassword, 
+  sendLoginOtp, verifyLoginOtp,
+  getUserProfile, updateUserProfile, getPublicUserProfile 
 } = require('../controllers/userController.js');
 const { protect } = require('../middleware/authMiddleware.js');
 
-// 1. Authentication / Registration
+// Public
 router.post('/', registerUser);
+router.post('/verify-otp', verifyOtp);
 router.post('/login', loginUser);
-router.post('/verify-otp', verifyOtp); // Static route before dynamic
 
-// 2. Private Profile (Self)
-router.route('/me')
-  .get(protect, getUserProfile)
-  .put(protect, updateUserProfile);
+// New Password Reset Routes
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 
-// 3. Public Profiles
-router.route('/:id').get(getPublicUserProfile); 
+// New OTP Login Routes
+router.post('/login-otp-send', sendLoginOtp);
+router.post('/login-otp-verify', verifyLoginOtp);
+
+// Private
+router.route('/me').get(protect, getUserProfile).put(protect, updateUserProfile);
+router.route('/:id').get(getPublicUserProfile);
 
 module.exports = router;

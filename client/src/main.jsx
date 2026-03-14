@@ -7,7 +7,7 @@ import './index.css';
 
 import { Provider } from 'react-redux';
 import { store } from './store/store.js';
-import { ThemeProvider } from './context/ThemeContext.jsx'; // Make sure this is imported
+import { ThemeProvider } from './context/ThemeContext.jsx';
 
 import {
   createBrowserRouter,
@@ -16,10 +16,11 @@ import {
 import axios from 'axios';
 
 // Import Pages
-import LandingPage from './pages/LandingPage.jsx'; // The new homepage
-import HomePage from './pages/HomePage.jsx'; // The marketplace
+import LandingPage from './pages/LandingPage.jsx';
+import HomePage from './pages/HomePage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
+import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx'; // <-- NEW IMPORT
 import ListingDetailPage from './pages/ListingDetailPage.jsx';
 import CreateListingPage from './pages/CreateListingPage.jsx';
 import EditListingPage from './pages/EditListingPage.jsx';
@@ -33,11 +34,11 @@ import ContactPage from './pages/ContactPage.jsx';
 // Import Components
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 
+// Configure Axios for Production
 if (import.meta.env.PROD) {
   axios.defaults.baseURL = import.meta.env.VITE_API_URL;
 }
 
-// This is the correct router configuration
 const router = createBrowserRouter([
   {
     path: '/',
@@ -45,11 +46,11 @@ const router = createBrowserRouter([
     children: [
       // --- Public Routes ---
       {
-        path: '/', // The root path is now the Landing Page
+        path: '/', 
         element: <LandingPage />,
       },
       {
-        path: '/market', // The marketplace is now at /market
+        path: '/market',
         element: <HomePage />,
       },
       {
@@ -61,19 +62,23 @@ const router = createBrowserRouter([
         element: <RegisterPage />,
       },
       {
+        path: '/forgot-password', // <-- NEW ROUTE
+        element: <ForgotPasswordPage />,
+      },
+      {
         path: '/listing/:id',
         element: <ListingDetailPage />,
       },
       {
-        path: '/about', // This route was missing
+        path: '/about',
         element: <AboutPage />,
       },
       {
-        path: '/contact', // This route was missing
+        path: '/contact',
         element: <ContactPage />,
       },
       { 
-        path: '/profile/:userId', // The public profile
+        path: '/profile/:userId',
         element: <PublicProfilePage /> 
       },
 
