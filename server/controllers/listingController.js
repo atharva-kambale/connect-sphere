@@ -61,17 +61,23 @@ const getListings = asyncHandler(async (req, res) => {
 // @desc    Get single listing
 // @route   GET /api/listings/:id
 // @access  Public
+// server/controllers/listingController.js -> update getListingById function
+
 const getListingById = asyncHandler(async (req, res) => {
   try {
+    // Populate explicitly pulls the user data for the frontend to show seller's name/rating
     const listing = await Listing.findById(req.params.id).populate('user', 'name email rating numReviews');
-    if (listing) { 
-      res.json(listing); 
-    } else { 
-      res.status(404).json({ message: 'Listing not found' }); 
+    
+    if (listing) {
+      res.json(listing);
+    } else {
+      // If the ID is valid format but listing doesn't exist, return a clean 404
+      res.status(404).json({ message: 'Listing not found in database' });
     }
   } catch (error) {
-    // This safely catches MongoDB CastErrors (invalid ID formats)
-    res.status(404).json({ message: 'Invalid Listing ID' });
+    // This catches MongoDB CastErrors (invalid ID format) and prevents server crash
+    console.error("Error fetching listing:", error.message);
+    res.status(404).json({ message: 'Invalid Listing ID or Listing Removed' });
   }
 });
 
