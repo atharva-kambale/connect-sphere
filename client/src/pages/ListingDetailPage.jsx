@@ -65,7 +65,7 @@ const ListingDetailPage = () => {
   const chatUrl = listing?.user ? `/chat/${listing._id}/${userInfo?._id}/${listing.user._id}` : '#';
 
   return (
-    <div className="max-w-6xl mx-auto p-4">
+    <div className="max-w-6xl mx-auto p-4 mt-24">
       
       {/* Top Container for Listing Details */}
       <div className="bg-white rounded-xl shadow-xl p-8 grid md:grid-cols-2 gap-10">
