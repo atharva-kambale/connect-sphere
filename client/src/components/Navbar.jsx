@@ -6,22 +6,16 @@ import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../store/slices/authSlice.js';
 import socket from '../socket.js';
 import ProfileDropdown from './ProfileDropdown.jsx';
-import { useTheme } from '../context/ThemeContext.jsx';
 import axios from 'axios';
 
-// --- Bell Icon Component (No change) ---
-const NotificationBell = ({ hasNotification, onClick }) => {
-  const { theme } = useTheme();
-  const iconColorClass = theme === 'white' 
-    ? 'text-gray-300 hover:text-white' 
-    : 'text-gray-600 hover:text-blue-600';
-
+// --- Bell Icon Component ---
+// Added colorClass prop so the Navbar can tell it to be white on the home page!
+const NotificationBell = ({ hasNotification, onClick, colorClass }) => {
   return (
-    <button onClick={onClick} className={`relative ${iconColorClass} transition-colors`}>
+    <button onClick={onClick} className={`relative ${colorClass} transition-colors`}>
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
         <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
       </svg>
-      {/* The badge will now render if hasNotification is greater than 0 */}
       {hasNotification > 0 && (
         <span className="absolute -top-2 -right-2 flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-xs font-bold ring-2 ring-white dark:ring-gray-800">
           {hasNotification > 9 ? '9+' : hasNotification}
@@ -30,7 +24,6 @@ const NotificationBell = ({ hasNotification, onClick }) => {
     </button>
   );
 };
-// --- End Bell Component ---
 
 const Navbar = () => {
   const { userInfo } = useSelector((state) => state.auth);
@@ -41,7 +34,6 @@ const Navbar = () => {
   const [isTop, setIsTop] = useState(true);
   const isLandingPage = location.pathname === '/';
   
-  // Use a number for the count
   const [notificationCount, setNotificationCount] = useState(0);
 
   // Transparent navbar logic
@@ -70,7 +62,6 @@ const Navbar = () => {
           const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
           const { data } = await axios.get('/api/notifications', config);
           if (data && data.length > 0) {
-            // Count how many notifications are actually unread
             const unreadCount = data.filter(n => !n.isRead).length;
             setNotificationCount(unreadCount);
           }
@@ -95,7 +86,7 @@ const Navbar = () => {
   };
   
   const handleInboxClick = async () => {
-    setNotificationCount(0); // Optimistically reset count
+    setNotificationCount(0);
     try {
       const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
       await axios.put('/api/notifications/mark-read', {}, config);
@@ -108,68 +99,56 @@ const Navbar = () => {
   const navSolidClass = "bg-white text-gray-800 shadow-md dark:bg-gray-800 dark:border-b dark:border-gray-700";
   const navTransparentClass = "bg-transparent text-white";
   const linkBaseClass = "font-medium transition-colors";
+  
   const linkSolidClass = "text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-white";
   const linkTransparentClass = "text-white hover:text-gray-200";
+  
   const navClasses = isLandingPage && isTop ? `${navBaseClass} ${navTransparentClass}` : `${navBaseClass} ${navSolidClass}`;
   const linkClasses = isLandingPage && isTop ? `${linkBaseClass} ${linkTransparentClass}` : `${linkBaseClass} ${linkSolidClass}`;
   const logoClass = isLandingPage && isTop ? "text-white" : "text-gray-800 dark:text-white";
+  
+  // Dynamic class specifically for the Bell Icon!
+  const bellColorClass = isLandingPage && isTop 
+    ? "text-white hover:text-gray-200" 
+    : "text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-white";
+
   const loginButtonClass = isLandingPage && isTop
     ? "font-medium border border-white text-white px-3 py-1.5 rounded-md text-sm hover:bg-white hover:text-gray-800 transition-colors"
     : "font-medium text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-white";
   const signupButtonClass = isLandingPage && isTop
     ? "bg-white text-blue-600 px-3 py-1.5 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors"
     : "bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors";
-  // --- (End of class definitions) ---
 
   return (
     <header className={navClasses}>
       <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-        
         <Link to="/" className={`text-2xl font-bold ${logoClass} hover:opacity-80 transition-colors`}>
           Connect Sphere
         </Link>
 
-        {/* Navigation Links */}
         <div className="flex items-center space-x-6">
-          
-          <Link to="/market" className={linkClasses}>
-            Marketplace
-          </Link>
-          <Link to="/about" className={linkClasses}>
-            About
-          </Link>
-          <Link to="/contact" className={linkClasses}>
-            Contact
-          </Link>
+          <Link to="/market" className={linkClasses}>Marketplace</Link>
+          <Link to="/about" className={linkClasses}>About</Link>
+          <Link to="/contact" className={linkClasses}>Contact</Link>
           
           {userInfo ? (
-            // --- If user is logged IN ---
             <>
               <button onClick={handleInboxClick} className={linkClasses}>
                 Inbox
               </button>
               
-              {/* --- FIX APPLIED HERE: Changed 'count' to 'hasNotification' --- */}
               <NotificationBell 
                 hasNotification={notificationCount} 
                 onClick={handleInboxClick}
+                colorClass={bellColorClass} // Passing the color down!
               />
-              {/* ------------------------------------------------------------ */}
               
               <ProfileDropdown />
             </>
           ) : (
-            // --- If user is logged OUT ---
             <>
-              <Link to="/login" className={loginButtonClass}>
-                Login
-              </Link>
-              <Link
-                to="/register"
-                className={signupButtonClass}
-              >
-                Sign Up
-              </Link>
+              <Link to="/login" className={loginButtonClass}>Login</Link>
+              <Link to="/register" className={signupButtonClass}>Sign Up</Link>
             </>
           )}
         </div>

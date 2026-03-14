@@ -18,7 +18,9 @@ const ChatPage = () => {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
   const { userInfo } = useSelector((state) => state.auth);
-  const messagesEndRef = useRef(null);
+  
+  // Ref points to the scrollable container
+  const chatContainerRef = useRef(null);
   const amIBuyer = userInfo._id === buyerId;
 
   // Fetch History and Join Room
@@ -80,21 +82,25 @@ const ChatPage = () => {
     }
   };
 
-  // Auto-scroll
+  // Targeted auto-scrolling
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
   }, [messages]);
 
   return (
     <>
-      <div className="max-w-4xl mx-auto p-4 pt-28 pb-10">
+      {/* THE SCREEN LOCK: Locks the whole page to exactly your monitor's height */}
+      <div className="max-w-4xl mx-auto px-4 pt-24 pb-6 h-screen flex flex-col">
         
-        {/* Main chat container - STRICT HEIGHT LOCKED */}
-        {/* I changed h-[75vh] to a fixed pixel fallback with standard vh so mobile browsers don't resize it */}
-        <div className="bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden 
-                        flex flex-col h-[600px] sm:h-[75vh] dark:bg-gray-800 dark:border-gray-700">
+        {/* THE CHAT BOX LOCK: Forces this box to fill the exact remaining space and NEVER stretch */}
+        <div className="bg-white rounded-xl shadow-2xl border border-gray-200 flex flex-col flex-1 min-h-0 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
           
-          {/* Chat Header (Fixed at top) */}
+          {/* Chat Header (Locked at top) */}
           <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center shrink-0
                           dark:bg-gray-700 dark:border-gray-600">
             <div>
@@ -112,8 +118,11 @@ const ChatPage = () => {
             )}
           </div>
 
-          {/* Messages Area - THE FIX IS HERE (flex-1 and min-h-0) */}
-          <div className="flex-1 min-h-0 p-4 overflow-y-auto space-y-4 bg-gray-100 dark:bg-gray-900">
+          {/* Messages Area - (Only this scrolls!) */}
+          <div 
+            ref={chatContainerRef} 
+            className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-100 dark:bg-gray-900"
+          >
             {loading && <p className="text-center text-gray-500 dark:text-gray-400">Loading history...</p>}
             
             {messages.map((msg, index) => (
@@ -131,15 +140,13 @@ const ChatPage = () => {
                   <strong className="block text-sm mb-1 opacity-80">
                     {msg.sender._id === userInfo._id ? 'You' : msg.sender.name}
                   </strong>
-                  <p className="text-md leading-relaxed">{msg.content}</p>
+                  <p className="text-md leading-relaxed break-words">{msg.content}</p>
                 </div>
               </div>
             ))}
-            {/* Invisible div to scroll to */}
-            <div ref={messagesEndRef} />
           </div>
           
-          {/* Input Form (Fixed at bottom) */}
+          {/* Input Form (Locked at bottom) */}
           <form className="p-4 bg-white border-t border-gray-200 flex space-x-3 shrink-0
                            dark:bg-gray-800 dark:border-gray-700" 
                 onSubmit={sendMessage}>
