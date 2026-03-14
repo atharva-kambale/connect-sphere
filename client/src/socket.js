@@ -1,20 +1,28 @@
 // client/src/socket.js
 
 import { io } from 'socket.io-client';
+import { store } from './store/store.js'; // We need to import the Redux store
 
-// --- THIS IS THE FIX ---
-// 1. Get the production URL from Vercel's environment variables
-//    This is the *same* variable we use for axios
 const URL = import.meta.env.PROD
   ? import.meta.env.VITE_API_URL
-  : 'http://localhost:5000'; // Fallback to localhost for development
+  : 'http://localhost:5000';
 
-console.log(`Socket connecting to: ${URL}`); // A good log for debugging
-// --- END OF FIX ---
-
-// Create the socket instance
 const socket = io(URL, {
-  autoConnect: false, // We still connect manually in the Navbar
+  // --- THIS IS THE FIX ---
+  autoConnect: false, // We will connect manually in the Navbar
+  
+  // This 'auth' function runs *every time* the socket tries to connect
+  auth: (cb) => {
+    // Get the current state from Redux
+    const state = store.getState();
+    const token = state.auth.userInfo?.token;
+    
+    // Send the token to the server
+    cb({
+      token: token,
+    });
+  },
+  // --- END OF FIX ---
 });
 
 export default socket;

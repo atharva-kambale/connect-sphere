@@ -2,7 +2,6 @@
 
 const mongoose = require('mongoose');
 
-// 1. Create the Schema
 const userSchema = mongoose.Schema(
   {
     name: {
@@ -12,7 +11,7 @@ const userSchema = mongoose.Schema(
     email: {
       type: String,
       required: [true, 'Please add an email'],
-      unique: true, // No two users can have the same email
+      unique: true,
     },
     password: {
       type: String,
@@ -22,25 +21,33 @@ const userSchema = mongoose.Schema(
       type: String,
       required: [true, 'Please add your university'],
     },
-
-    // --- THIS IS THE NEW CODE ---
     rating: {
       type: Number,
       required: true,
-      default: 0, // Default to 0 stars
+      default: 0,
     },
     numReviews: {
       type: Number,
       required: true,
-      default: 0, // Default to 0 reviews
+      default: 0,
+    },
+
+    // --- THIS IS THE NEW CODE ---
+    profilePictureUrl: {
+      type: String,
+      // A default generic avatar
+      default: 'https://i.imgur.com/6VBx3io.png', 
+    },
+    bannerImageUrl: {
+      type: String,
+      // A default generic banner
+      default: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=1793&auto=format&fit=crop', 
     },
     // --- END OF NEW CODE ---
   },
   {
-    // 2. Add timestamps
-    timestamps: true, // Automatically adds 'createdAt' and 'updatedAt' fields
+    timestamps: true,
   }
 );
 
-// 3. Create the Model and Export it
 module.exports = mongoose.model('User', userSchema);

@@ -6,7 +6,8 @@ const {
   registerUser,
   loginUser,
   getUserProfile,
-  updateUserProfile, // 1. Import new function
+  updateUserProfile,
+  getPublicUserProfile, // 1. Import new function
 } = require('../controllers/userController.js');
 const { protect } = require('../middleware/authMiddleware.js');
 
@@ -14,11 +15,14 @@ const { protect } = require('../middleware/authMiddleware.js');
 router.post('/', registerUser);
 router.post('/login', loginUser);
 
-// --- 2. UPDATE THIS ROUTE ---
-// Chain GET and PUT requests to the same '/me' path
+// Private "me" route for settings
 router
   .route('/me')
-  .get(protect, getUserProfile) // GET /api/users/me
-  .put(protect, updateUserProfile); // PUT /api/users/me
+  .get(protect, getUserProfile)
+  .put(protect, updateUserProfile);
+
+// --- 2. ADD THE NEW PUBLIC ROUTE ---
+// This MUST be last, so '/me' is checked first.
+router.route('/:id').get(getPublicUserProfile); // GET /api/users/<user_id>
 
 module.exports = router;

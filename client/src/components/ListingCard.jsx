@@ -3,136 +3,82 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-// --- (Styles are the same) ---
-const cardWrapperStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  background: '#fff',
-  border: '1px solid #ddd',
-  borderRadius: '8px',
-  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-  overflow: 'hidden',
-};
-const cardLinkStyle = {
-  display: 'block',
-  textDecoration: 'none',
-  color: 'inherit',
-  transition: 'box-shadow 0.2s',
-};
-const imageStyle = {
-  width: '100%',
-  height: '200px',
-  objectFit: 'cover',
-  background: '#f0f0f0',
-};
-const contentStyle = {
-  padding: '1rem',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.5rem',
-  flexGrow: 1,
-};
-const titleStyle = {
-  fontSize: '1.25rem',
-  fontWeight: 'bold',
-  color: '#333',
-};
-const priceStyle = {
-  fontSize: '1.1rem',
-  fontWeight: 'bold',
-  color: '#007bff',
-};
-const infoStyle = {
-  fontSize: '0.9rem',
-  color: '#666',
-};
-const buttonContainerStyle = {
-  display: 'flex',
-  width: '100%',
-};
-const buttonBaseStyle = {
-  flex: 1,
-  padding: '0.75rem',
-  border: 'none',
-  borderTop: '1px solid #eee',
-  cursor: 'pointer',
-  fontSize: '0.9rem',
-  fontWeight: 'bold',
-  background: '#fcfcfc',
-  color: '#333',
-  textDecoration: 'none', // For Link
-  textAlign: 'center',  // For Link
-};
-const editButtonStyle = {
-  ...buttonBaseStyle,
-  color: '#007bff',
-  borderRight: '1px solid #eee',
-};
-const deleteButtonStyle = {
-  ...buttonBaseStyle,
-  color: '#dc3545',
-};
-// --- (End of Styles) ---
-
-// 1. --- ACCEPT NEW 'editLink' PROP ---
 const ListingCard = ({ listing, onDelete, editLink }) => {
   const formattedDate = new Date(listing.createdAt).toLocaleDateString();
 
+  // --- THIS IS THE FIX ---
+  // Get the first image, or a placeholder if the array is empty
   const coverImage = listing.imageUrls && listing.imageUrls.length > 0
     ? listing.imageUrls[0]
-    : 'https://via.placeholder.com/300x200';
+    : 'https://via.placeholder.com/300x200?text=No+Image'; // Was 'rtx.placeholder.com'
+  // --- END OF FIX ---
 
+  // Stop link navigation if we are clicking a button
+  const handleButtonWrapperClick = (e) => {
+    e.preventDefault();
+  }
+  
   const handleDeleteClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
     onDelete(listing._id);
   };
-  
-  // Stop link navigation if we are clicking a button
-  const handleButtonWrapperClick = (e) => {
-    // This stops the main card <Link> from firing
-    e.preventDefault();
-  }
 
   return (
-    <div style={cardWrapperStyle}>
-      <Link
-        to={`/listing/${listing._id}`}
-        style={cardLinkStyle}
-        onMouseOver={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'}
-        onMouseOut={(e) => e.currentTarget.style.boxShadow = 'none'}
-      >
+    // Card Wrapper
+    <div className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col 
+                    transition-all duration-300 hover:shadow-2xl hover:-translate-y-1
+                    dark:bg-gray-800 dark:border dark:border-gray-700">
+      
+      <Link to={`/listing/${listing._id}`} className="flex flex-col flex-grow">
+        
+        {/* Image */}
         <img
           src={coverImage}
           alt={listing.title}
-          style={imageStyle}
+          className="w-full h-48 object-cover"
         />
-        <div style={contentStyle}>
-          <h3 style={titleStyle}>{listing.title}</h3>
-          <p style={priceStyle}>${listing.price}</p>
-          <p style={infoStyle}>
-            <strong>University:</strong> {listing.university}
-          </p>
-          <p style={infoStyle}>
-            <strong>Posted:</strong> {formattedDate}
+        
+        {/* Content */}
+        <div className="p-4 flex flex-col flex-grow">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white truncate" title={listing.title}>
+            {listing.title}
+          </h3>
+          <p className="text-xl font-extrabold text-blue-600 my-1">${listing.price}</p>
+          
+          <div className="flex-grow">
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+              {listing.university}
+            </p>
+          </div>
+
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            Posted: {formattedDate}
           </p>
         </div>
-        
-        {/* 2. --- CONDITIONAL BUTTONS (Updated) --- */}
-        {/* We use 'onDelete' to know if we are on the Profile page */}
-        {onDelete && (
-          <div style={buttonContainerStyle} onClick={handleButtonWrapperClick}>
-            {/* 3. --- "Edit" button is now a Link --- */}
-            <Link to={editLink} style={editButtonStyle}>
-              Edit
-            </Link>
-            <button style={deleteButtonStyle} onClick={handleDeleteClick}>
-              Delete
-            </button>
-          </div>
-        )}
-        {/* --- END OF CHANGE --- */}
       </Link>
+      
+      {/* Conditional Edit/Delete Buttons */}
+      {onDelete && (
+        <div className="flex w-full border-t border-gray-100 dark:border-gray-700" onClick={handleButtonWrapperClick}>
+          <Link 
+            to={editLink} 
+            className="flex-1 p-3 text-center text-sm font-medium text-blue-600 bg-gray-50 
+                       hover:bg-blue-100 transition-colors border-r dark:border-gray-700
+                       dark:bg-gray-700 dark:text-blue-400 dark:hover:bg-gray-600"
+          >
+            Edit
+          </Link>
+          <button 
+            className="flex-1 p-3 text-center text-sm font-medium text-red-600 bg-gray-50 
+                       hover:bg-red-100 transition-colors
+                       dark:bg-gray-700 dark:text-red-400 dark:hover:bg-gray-600"
+            onClick={handleDeleteClick}
+          >
+            Delete
+          </button>
+        </div>
+      )}
     </div>
   );
 };

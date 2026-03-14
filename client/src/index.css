@@ -3,3 +3,12 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* This applies the base background colors for light and dark mode.
+  'apply' is a Tailwind directive.
+*/
+@layer base {
+  body {
+    @apply bg-gray-50 dark:bg-gray-900 transition-colors duration-200;
+  }
+}
